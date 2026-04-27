@@ -1,0 +1,252 @@
+# =============================================================================
+# .claudeignore — Proyecto entregas_b2b (Flutter multi-plataforma)
+# =============================================================================
+# Le dice a Claude Code qué archivos NO debe leer ni indexar.
+# Funciona igual que .gitignore pero solo para Claude Code.
+# Optimizado para máximo ahorro de tokens.
+# =============================================================================
+
+
+# =============================================================================
+# 1. FLUTTER / DART — Archivos generados y caches
+# =============================================================================
+
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+pubspec.lock
+
+
+# =============================================================================
+# 2. CÓDIGO GENERADO POR build_runner
+# =============================================================================
+# IMPORTANTE: Estos archivos son necesarios para compilar pero NO se editan
+# manualmente. Claude debe modificar el archivo fuente y luego ejecutar
+# `dart run build_runner build --delete-conflicting-outputs`.
+# Filosofía: ahorro máximo de tokens. Si Claude necesita verificar una API
+# generada, diagnosticar con `flutter analyze`.
+
+**/*.g.dart
+**/*.freezed.dart
+**/*.config.dart
+**/*.gen.dart
+**/*.mocks.dart
+**/*.gr.dart
+**/*.chopper.dart
+
+
+# =============================================================================
+# 3. ANDROID — Builds, caches y archivos nativos auto-generados
+# =============================================================================
+
+android/.gradle/
+android/build/
+android/app/build/
+android/app/release/
+android/app/debug/
+android/app/profile/
+android/captures/
+android/.idea/
+android/local.properties
+android/gradle/
+android/gradlew
+android/gradlew.bat
+**/android/**/gradle-wrapper.jar
+
+
+# =============================================================================
+# 4. iOS — Pods, caches, configuración auto-generada y user-specific
+# =============================================================================
+
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework/
+ios/Flutter/Flutter.podspec
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Generated.xcconfig
+ios/Flutter/App.framework/
+ios/Flutter/ephemeral/
+ios/Runner.xcworkspace/xcuserdata/
+ios/Runner.xcodeproj/xcuserdata/
+ios/Runner.xcodeproj/project.xcworkspace/xcuserdata/
+ios/build/
+ios/DerivedData/
+**/*.mode1v3
+**/*.mode2v3
+**/*.perspectivev3
+**/*.pbxuser
+**/*.xcuserstate
+
+
+# =============================================================================
+# 5. WEB — Solo lo auto-generado (NO ignorar lib/main.dart ni código fuente)
+# =============================================================================
+
+build/web/
+
+
+# =============================================================================
+# 6. IDE / EDITORES
+# =============================================================================
+
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+
+# =============================================================================
+# 7. LOGS, TEMPORALES Y CACHES
+# =============================================================================
+
+*.log
+*.tmp
+*.temp
+*.cache
+*.bak
+.coverage/
+coverage/
+.nyc_output/
+test/coverage_helper_test.dart
+
+
+# =============================================================================
+# 8. SECRETOS Y CONFIGURACIÓN SENSIBLE (CRÍTICO — NO COMMITEAR JAMÁS)
+# =============================================================================
+
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.staging
+**/secrets.json
+**/credentials.json
+**/service-account*.json
+
+# Firebase — config files con identificadores del proyecto
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+firebase_options*.dart
+
+# Keystores y certificados de firma
+**/*.keystore
+**/*.jks
+**/*.p12
+**/*.pem
+**/*.cer
+**/*.mobileprovision
+android/key.properties
+android/app/upload-keystore.jks
+android/app/release.keystore
+
+
+# =============================================================================
+# 9. DOCUMENTACIÓN GENERADA
+# =============================================================================
+
+doc/api/
+doc/build/
+
+
+# =============================================================================
+# 10. ASSETS BINARIOS — Imágenes, fuentes, audio, video
+# =============================================================================
+# Razón: gastan muchos tokens y rara vez aportan contexto útil.
+# Si Claude necesita analizar una imagen específica, pídele que la lea
+# manualmente con su path completo (puede saltarse este ignore).
+# NOTA: SVG NO se ignora porque es texto editable.
+
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.gif
+**/*.webp
+**/*.bmp
+**/*.tiff
+**/*.ico
+**/*.icns
+
+# Fuentes
+**/*.ttf
+**/*.otf
+**/*.woff
+**/*.woff2
+**/*.eot
+
+# Audio
+**/*.mp3
+**/*.wav
+**/*.ogg
+**/*.m4a
+**/*.flac
+**/*.aac
+
+# Video
+**/*.mp4
+**/*.mov
+**/*.avi
+**/*.mkv
+**/*.webm
+
+# Otros binarios
+**/*.zip
+**/*.tar
+**/*.tar.gz
+**/*.tgz
+**/*.rar
+**/*.7z
+**/*.dmg
+**/*.exe
+**/*.apk
+**/*.aab
+**/*.ipa
+**/*.dylib
+**/*.so
+**/*.dll
+**/*.a
+
+
+# =============================================================================
+# 11. CARPETAS DE OTROS GESTORES DE PAQUETES (por si acaso)
+# =============================================================================
+
+node_modules/
+.npm/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+
+# =============================================================================
+# 12. ARCHIVOS DE CI/CD (los puedes editar manualmente cuando los necesites)
+# =============================================================================
+# Comentado por defecto. Descomentar si NO quieres que Claude los toque.
+
+# .github/workflows/
+# .gitlab-ci.yml
+# bitrise.yml
+# codemagic.yaml
+# fastlane/
+
+
+# =============================================================================
+# FIN
+# =============================================================================
+# Si descubres que Claude está leyendo algo que debería ignorar, añádelo aquí.
+# Si Claude no puede ver algo que SÍ necesita, quítalo de aquí o sé más
+# específico con el patrón.
+# =============================================================================

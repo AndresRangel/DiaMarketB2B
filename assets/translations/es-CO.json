@@ -1,0 +1,64 @@
+{
+  "auth": {
+    "login": "Iniciar sesión",
+    "username": "Usuario",
+    "password": "Contraseña",
+    "remember_me": "Recordarme",
+    "forgot_password": "¿Olvidaste tu contraseña?",
+    "register": "Registrarse",
+    "otp_title": "Verificación de identidad",
+    "otp_resend": "Reenviar código",
+    "pending_approval": "Tu solicitud está en revisión"
+  },
+  "catalog": {
+    "categories": "Categorías",
+    "products": "Productos",
+    "search": "Buscar productos",
+    "add_to_cart": "Agregar al carrito",
+    "out_of_stock": "Agotado",
+    "suggested": "Sugeridos para ti",
+    "unit_price": "Precio unitario"
+  },
+  "cart": {
+    "title": "Carrito",
+    "subtotal": "Subtotal",
+    "tax": "IVA",
+    "discount": "Descuento",
+    "total": "Total",
+    "empty": "Tu carrito está vacío",
+    "min_order": "Monto mínimo de pedido: {}",
+    "checkout": "Finalizar pedido",
+    "clear": "Vaciar carrito"
+  },
+  "orders": {
+    "title": "Pedidos",
+    "number": "Pedido #{}",
+    "date": "Fecha",
+    "detail": "Detalle del pedido",
+    "success": "¡Pedido realizado con éxito!"
+  },
+  "finance": {
+    "accounts": "Cartera",
+    "total_debt": "Deuda total",
+    "available_credit": "Crédito disponible",
+    "days_overdue": "{} días de mora",
+    "points": "Puntos de fidelización"
+  },
+  "promotions": {
+    "title": "Promociones",
+    "valid_until": "Válido hasta {}",
+    "coupons": "Cupones",
+    "enter_coupon": "Ingresa tu cupón"
+  },
+  "common": {
+    "confirm": "Confirmar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "error": "Error",
+    "retry": "Reintentar",
+    "loading": "Cargando...",
+    "no_data": "No hay datos disponibles",
+    "success": "Éxito",
+    "connection_error": "Sin conexión. Verifica tu internet."
+  }
+}

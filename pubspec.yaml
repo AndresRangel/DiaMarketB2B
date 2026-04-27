@@ -1,0 +1,90 @@
+name: entregas_b2b
+description: "App B2B white-label - migración Flutter multi-plataforma"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ── Estado (Riverpod) ──────────────────────────────────────────────────────
+  flutter_riverpod: ^3.3.1        # Gestor de estado principal (reemplaza GetX)
+  riverpod_annotation: ^4.0.2    # Anotaciones @riverpod para generación de código
+
+  # ── Navegación ────────────────────────────────────────────────────────────
+  go_router: ^17.2.0              # Manejo de rutas con URL reales (funciona en web)
+
+  # ── HTTP / Red ─────────────────────────────────────────────────────────────
+  dio: ^5.9.2                     # Cliente HTTP con interceptores (auth, refresh token)
+
+  # ── Modelos inmutables ────────────────────────────────────────────────────
+  freezed_annotation: ^3.1.0     # Anotaciones para clases inmutables (@freezed)
+
+  # ── Serialización JSON ────────────────────────────────────────────────────
+  json_annotation: ^4.11.0       # Anotaciones para serialización (@JsonSerializable)
+
+  # ── Manejo funcional de errores ───────────────────────────────────────────
+  fpdart: ^1.2.0                  # Either<Failure, T> — retorno funcional sin excepciones
+
+  # ── Internacionalización ──────────────────────────────────────────────────
+  easy_localization: ^3.0.8      # Sistema de traducciones multi-idioma (.tr())
+
+  # ── Cache local (disco) ───────────────────────────────────────────────────
+  hive: ^2.2.3                    # Base de datos clave-valor en disco (reemplaza GetStorage)
+  hive_flutter: ^1.1.0            # Integración de Hive con Flutter
+
+  # ── Storage seguro ────────────────────────────────────────────────────────
+  flutter_secure_storage: ^10.0.0 # Token de sesión encriptado en el dispositivo
+
+  # ── Imágenes remotas ──────────────────────────────────────────────────────
+  cached_network_image: ^3.4.1   # Descarga y cachea imágenes de la CDN
+
+  # ── Firebase ──────────────────────────────────────────────────────────────
+  firebase_core: ^4.6.0          # Base requerida por todos los paquetes Firebase
+  firebase_analytics: ^12.2.0    # Analytics de uso de la app
+  firebase_crashlytics: ^5.1.0   # Reporte automático de crashes (solo móvil)
+  firebase_messaging: ^16.1.3    # Notificaciones push (FCM)
+
+  # ── Notificaciones locales ────────────────────────────────────────────────
+  flutter_local_notifications: ^21.0.0 # Muestra notificación cuando la app está abierta
+
+  # ── Geolocalización ───────────────────────────────────────────────────────
+  geolocator: ^14.0.2            # GPS para confirmar dirección de entrega
+
+  # ── Permisos ──────────────────────────────────────────────────────────────
+  permission_handler: ^12.0.1    # Solicitar permisos al usuario (cámara, ubicación, etc.)
+
+  # ── Logs ──────────────────────────────────────────────────────────────────
+  logger: ^2.7.0                  # Logs estructurados y legibles en consola
+
+  # ── UI ────────────────────────────────────────────────────────────────────
+  shimmer: ^3.0.0                 # Efecto skeleton loading en pantallas de carga
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # ── Generación de código ──────────────────────────────────────────────────
+  build_runner: ^2.13.1          # Motor que ejecuta todos los generadores de código
+  riverpod_generator: ^4.0.0     # Genera providers desde anotaciones @riverpod
+  freezed: ^3.2.3                # Genera clases inmutables desde @freezed
+  json_serializable: ^6.11.2     # Genera fromJson/toJson desde @JsonSerializable
+
+  # ── Linting / Análisis ────────────────────────────────────────────────────
+  riverpod_lint: ^3.1.3          # Reglas de Riverpod (incluye custom_lint automáticamente)
+
+  # ── Testing ───────────────────────────────────────────────────────────────
+  mocktail: ^1.0.4               # Crea mocks para tests sin generación de código
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/translations/       # Archivos de traducción (es-CO.json, en-US.json, etc.)

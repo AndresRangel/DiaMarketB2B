@@ -1,0 +1,64 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'dio_provider.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+/// Provider global del cliente HTTP.
+///
+/// keepAlive: true → vive durante toda la app, nunca se destruye.
+/// Es el mismo DioClient que usan todos los data sources.
+
+@ProviderFor(dioClient)
+final dioClientProvider = DioClientProvider._();
+
+/// Provider global del cliente HTTP.
+///
+/// keepAlive: true → vive durante toda la app, nunca se destruye.
+/// Es el mismo DioClient que usan todos los data sources.
+
+final class DioClientProvider
+    extends $FunctionalProvider<DioClient, DioClient, DioClient>
+    with $Provider<DioClient> {
+  /// Provider global del cliente HTTP.
+  ///
+  /// keepAlive: true → vive durante toda la app, nunca se destruye.
+  /// Es el mismo DioClient que usan todos los data sources.
+  DioClientProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'dioClientProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$dioClientHash();
+
+  @$internal
+  @override
+  $ProviderElement<DioClient> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  DioClient create(Ref ref) {
+    return dioClient(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DioClient value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DioClient>(value),
+    );
+  }
+}
+
+String _$dioClientHash() => r'895f0dc2f8d5eab562ad65390e5c6d4a1f722b0d';

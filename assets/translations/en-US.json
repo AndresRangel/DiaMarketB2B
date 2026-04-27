@@ -1,0 +1,64 @@
+{
+  "auth": {
+    "login": "Sign in",
+    "username": "Username",
+    "password": "Password",
+    "remember_me": "Remember me",
+    "forgot_password": "Forgot your password?",
+    "register": "Register",
+    "otp_title": "Identity verification",
+    "otp_resend": "Resend code",
+    "pending_approval": "Your request is under review"
+  },
+  "catalog": {
+    "categories": "Categories",
+    "products": "Products",
+    "search": "Search products",
+    "add_to_cart": "Add to cart",
+    "out_of_stock": "Out of stock",
+    "suggested": "Suggested for you",
+    "unit_price": "Unit price"
+  },
+  "cart": {
+    "title": "Cart",
+    "subtotal": "Subtotal",
+    "tax": "Tax",
+    "discount": "Discount",
+    "total": "Total",
+    "empty": "Your cart is empty",
+    "min_order": "Minimum order amount: {}",
+    "checkout": "Place order",
+    "clear": "Clear cart"
+  },
+  "orders": {
+    "title": "Orders",
+    "number": "Order #{}",
+    "date": "Date",
+    "detail": "Order detail",
+    "success": "Order placed successfully!"
+  },
+  "finance": {
+    "accounts": "Accounts",
+    "total_debt": "Total debt",
+    "available_credit": "Available credit",
+    "days_overdue": "{} days overdue",
+    "points": "Loyalty points"
+  },
+  "promotions": {
+    "title": "Promotions",
+    "valid_until": "Valid until {}",
+    "coupons": "Coupons",
+    "enter_coupon": "Enter your coupon"
+  },
+  "common": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "error": "Error",
+    "retry": "Retry",
+    "loading": "Loading...",
+    "no_data": "No data available",
+    "success": "Success",
+    "connection_error": "No connection. Check your internet."
+  }
+}
