@@ -24,7 +24,9 @@ class CartPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      appBar: isDesktop ? null : _buildAppBar(context, cart, config.theme.primaryColor),
+      appBar: isDesktop
+          ? null
+          : _buildAppBar(context, ref, cart, config.theme.primaryColor),
       body: cart.isEmpty
           ? _buildEmptyCart(config.theme.primaryColor)
           : Center(
@@ -40,7 +42,7 @@ class CartPage extends ConsumerWidget {
   }
 
   PreferredSizeWidget _buildAppBar(
-      BuildContext context, CartEntity cart, Color primaryColor) {
+      BuildContext context, WidgetRef ref, CartEntity cart, Color primaryColor) {
     return AppBar(
       backgroundColor: primaryColor,
       elevation: 0,
@@ -77,7 +79,7 @@ class CartPage extends ConsumerWidget {
       actions: [
         if (!cart.isEmpty)
           TextButton.icon(
-            onPressed: () => _confirmClear(context),
+            onPressed: () => confirmClearCart(context, ref),
             icon: const Icon(Icons.delete_outline,
                 color: Colors.white70, size: 18),
             label: const Text('Vaciar',
@@ -95,33 +97,30 @@ class CartPage extends ConsumerWidget {
       subtitle: 'Agrega productos desde el catálogo para comenzar tu pedido.',
     );
   }
+}
 
-  void _confirmClear(BuildContext context) {
-    showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Vaciar carrito'),
-        content: const Text(
-            '¿Seguro que quieres eliminar todos los productos del carrito?'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancelar')),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Vaciar',
-                style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    ).then((confirmed) {
-      if (confirmed == true && context.mounted) {
-        ProviderScope.containerOf(context)
-            .read(cartProvider.notifier)
-            .clear();
-      }
-    });
-  }
+void confirmClearCart(BuildContext context, WidgetRef ref) {
+  showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Vaciar carrito'),
+      content: const Text(
+          '¿Seguro que quieres eliminar todos los productos del carrito?'),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar')),
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('Vaciar', style: TextStyle(color: Colors.red)),
+        ),
+      ],
+    ),
+  ).then((confirmed) {
+    if (confirmed == true && context.mounted) {
+      ref.read(cartProvider.notifier).clear();
+    }
+  });
 }
 
 // ── Desktop: dos columnas ─────────────────────────────────────────────────────
@@ -135,20 +134,50 @@ class _CartDesktopLayout extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // ── Columna izquierda: lista de ítems (60%) ───────────────────
         Expanded(
           flex: 6,
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 16, 8, 24),
-            itemCount: cart.items.length,
-            itemBuilder: (_, i) => _CartItemCard(
-              item: cart.items[i],
-              locale: config.locale,
-              primaryColor: config.theme.primaryColor,
-              isDesktop: true,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 8, 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${cart.items.length} ${cart.items.length == 1 ? 'producto' : 'productos'}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF666666),
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => confirmClearCart(context, ref),
+                      icon: const Icon(Icons.delete_outline,
+                          size: 16, color: Colors.red),
+                      label: const Text('Vaciar carrito',
+                          style: TextStyle(color: Colors.red, fontSize: 13)),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 24),
+                  itemCount: cart.items.length,
+                  itemBuilder: (_, i) => _CartItemCard(
+                    item: cart.items[i],
+                    locale: config.locale,
+                    primaryColor: config.theme.primaryColor,
+                    isDesktop: true,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
 
