@@ -91,7 +91,7 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        duration: const Duration(microseconds: 500),
+        duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
         action: SnackBarAction(
           label: 'Ver carrito',

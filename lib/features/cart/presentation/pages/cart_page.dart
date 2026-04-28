@@ -99,16 +99,16 @@ class CartPage extends ConsumerWidget {
   void _confirmClear(BuildContext context) {
     showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Vaciar carrito'),
         content: const Text(
             '¿Seguro que quieres eliminar todos los productos del carrito?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.of(dialogContext).pop(false),
               child: const Text('Cancelar')),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Vaciar',
                 style: TextStyle(color: Colors.red)),
           ),
