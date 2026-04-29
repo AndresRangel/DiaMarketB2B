@@ -84,21 +84,69 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
         .read(cartProvider.notifier)
         .addItemWithQuantity(product, _quantity);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '$_quantity × ${product.name} agregado al carrito',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-        action: SnackBarAction(
-          label: 'Ver carrito',
-          onPressed: () => context.go('/cart'),
+    _showToast(context, '$_quantity × ${product.name} agregado al carrito');
+  }
+
+  void _showToast(BuildContext context, String message) {
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+
+    entry = OverlayEntry(
+      builder: (_) => Positioned(
+        bottom: MediaQuery.of(context).padding.bottom + 72,
+        left: 16,
+        right: 16,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A2E),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    message,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                GestureDetector(
+                  onTap: () {
+                    entry.remove();
+                    context.go('/cart');
+                  },
+                  child: Text(
+                    'Ver carrito',
+                    style: TextStyle(
+                      color: primary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
+
+    overlay.insert(entry);
+    Future.delayed(const Duration(seconds: 3), () {
+      if (entry.mounted) entry.remove();
+    });
   }
 
   @override
@@ -218,7 +266,7 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
                         const SizedBox(height: 12),
                         _buildQuantityCard(),
                         const SizedBox(height: 12),
-                        _buildDesktopAddButton(),
+                        Builder(builder: (ctx) => _buildDesktopAddButton(ctx)),
                         if (related.isNotEmpty) ...[
                           const SizedBox(height: 12),
                           _buildRelatedSection(related, categoryName),
@@ -236,7 +284,7 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
     );
   }
 
-  Widget _buildDesktopAddButton() {
+  Widget _buildDesktopAddButton(BuildContext innerContext) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -271,7 +319,7 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
             child: SizedBox(
               height: 48,
               child: FilledButton.icon(
-                onPressed: () => _addToCart(context),
+                onPressed: () => _addToCart(innerContext),
                 style: FilledButton.styleFrom(
                   backgroundColor: primary,
                   shape: RoundedRectangleBorder(
@@ -321,7 +369,9 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
         ],
       ),
-      bottomNavigationBar: _buildStickyBar(),
+      bottomNavigationBar: Builder(
+        builder: (innerContext) => _buildStickyBar(innerContext),
+      ),
     );
   }
 
@@ -709,13 +759,13 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
 
   // ── Sticky bar ────────────────────────────────────────────────────────────
 
-  Widget _buildStickyBar() {
+  Widget _buildStickyBar(BuildContext innerContext) {
     return Container(
       padding: EdgeInsets.fromLTRB(
         16,
         12,
         16,
-        12 + MediaQuery.of(context).padding.bottom,
+        12 + MediaQuery.of(innerContext).padding.bottom,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -756,7 +806,7 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
             child: SizedBox(
               height: 48,
               child: FilledButton.icon(
-                onPressed: () => _addToCart(context),
+                onPressed: () => _addToCart(innerContext),
                 style: FilledButton.styleFrom(
                   backgroundColor: primary,
                   shape: RoundedRectangleBorder(
