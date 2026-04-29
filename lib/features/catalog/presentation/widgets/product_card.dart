@@ -8,7 +8,6 @@ import '../../../../core/utils/currency_formatter.dart';
 import '../../domain/entities/product_entity.dart';
 import '../../../cart/presentation/notifiers/cart_notifier.dart';
 
-/// Tarjeta de producto para la grilla del catálogo.
 class ProductCard extends ConsumerWidget {
   const ProductCard({super.key, required this.product});
 
@@ -19,21 +18,21 @@ class ProductCard extends ConsumerWidget {
     final locale = ref.watch(themeProvider.select((c) => c.locale));
     final primaryColor =
         ref.watch(themeProvider.select((c) => c.theme.primaryColor));
-    // select → solo reconstruye cuando cambia la cantidad de ESTE producto.
-    final qty = ref.watch(
-        cartProvider.select((c) => c.quantityOf(product.sku)));
+    final qty =
+        ref.watch(cartProvider.select((c) => c.quantityOf(product.sku)));
 
     return Card(
       clipBehavior: Clip.antiAlias,
-      elevation: 0,
+      elevation: qty > 0 ? 3 : 1,
+      shadowColor: qty > 0
+          ? primaryColor.withValues(alpha: 0.25)
+          : Colors.black.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(
-          color: qty > 0
-              ? primaryColor.withValues(alpha: 0.4)
-              : Colors.grey.shade100,
-          width: qty > 0 ? 1.5 : 1,
-        ),
+        borderRadius: BorderRadius.circular(14),
+        side: qty > 0
+            ? BorderSide(
+                color: primaryColor.withValues(alpha: 0.4), width: 1.5)
+            : BorderSide.none,
       ),
       color: Colors.white,
       child: InkWell(
@@ -73,11 +72,11 @@ class ProductCard extends ConsumerWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5),
                   Text(
                     CurrencyFormatter.format(product.basePrice, locale),
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: primaryColor,
                     ),
@@ -92,9 +91,8 @@ class ProductCard extends ConsumerWidget {
               child: qty == 0
                   ? _AddButton(
                       primaryColor: primaryColor,
-                      onTap: () => ref
-                          .read(cartProvider.notifier)
-                          .addItem(product),
+                      onTap: () =>
+                          ref.read(cartProvider.notifier).addItem(product),
                     )
                   : _QtySelector(
                       qty: qty,
@@ -166,20 +164,20 @@ class _AddButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 32,
+      height: 34,
       child: FilledButton.icon(
         onPressed: onTap,
         style: FilledButton.styleFrom(
           backgroundColor: primaryColor,
           padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
         icon: const Icon(Icons.add, size: 16, color: Colors.white),
         label: const Text(
           'Agregar',
           style: TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
               color: Colors.white),
         ),
@@ -206,10 +204,9 @@ class _QtySelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 32,
+      height: 34,
       child: Row(
         children: [
-          // Botón −  (si qty=1 muestra 🗑)
           Expanded(
             child: _InlineBtn(
               icon: qty == 1 ? Icons.delete_outline : Icons.remove,
@@ -218,14 +215,13 @@ class _QtySelector extends StatelessWidget {
               isLeft: true,
             ),
           ),
-          // Cantidad
           Container(
             width: 36,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               border: Border.symmetric(
                 horizontal: BorderSide(
-                    color: primaryColor.withValues(alpha: 0.3)),
+                    color: primaryColor.withValues(alpha: 0.25)),
               ),
               color: primaryColor.withValues(alpha: 0.05),
             ),
@@ -238,7 +234,6 @@ class _QtySelector extends StatelessWidget {
               ),
             ),
           ),
-          // Botón +
           Expanded(
             child: _InlineBtn(
               icon: Icons.add,
@@ -271,14 +266,14 @@ class _InlineBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 32,
+        height: 34,
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.horizontal(
-            left: isLeft ? const Radius.circular(8) : Radius.zero,
-            right: isLeft ? Radius.zero : const Radius.circular(8),
+            left: isLeft ? const Radius.circular(10) : Radius.zero,
+            right: isLeft ? Radius.zero : const Radius.circular(10),
           ),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Icon(icon, size: 15, color: color),
       ),
@@ -296,7 +291,7 @@ class _ProductImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: const Color(0xFFF8F9FB),
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(10),
       child: (imageUrl == null || imageUrl!.isEmpty)
           ? _placeholder()
           : CachedNetworkImage(
@@ -315,7 +310,7 @@ class _ProductImage extends StatelessWidget {
       );
 }
 
-// ── Featured card (scroll horizontal, solo badge) ─────────────────────────────
+// ── Featured card ─────────────────────────────────────────────────────────────
 
 class FeaturedProductCard extends ConsumerWidget {
   const FeaturedProductCard({super.key, required this.product});
@@ -327,22 +322,29 @@ class FeaturedProductCard extends ConsumerWidget {
     final locale = ref.watch(themeProvider.select((c) => c.locale));
     final primaryColor =
         ref.watch(themeProvider.select((c) => c.theme.primaryColor));
-    final qty = ref.watch(
-        cartProvider.select((c) => c.quantityOf(product.sku)));
+    final qty =
+        ref.watch(cartProvider.select((c) => c.quantityOf(product.sku)));
 
     return GestureDetector(
       onTap: () => context.push('/product/${product.sku}'),
       child: Container(
-        width: 148,
+        width: 152,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: qty > 0
-                ? primaryColor.withValues(alpha: 0.4)
-                : Colors.grey.shade100,
-            width: qty > 0 ? 1.5 : 1,
-          ),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: qty > 0
+                  ? primaryColor.withValues(alpha: 0.2)
+                  : Colors.black.withValues(alpha: 0.06),
+              blurRadius: qty > 0 ? 10 : 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+          border: qty > 0
+              ? Border.all(
+                  color: primaryColor.withValues(alpha: 0.4), width: 1.5)
+              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,13 +352,13 @@ class FeaturedProductCard extends ConsumerWidget {
             // Imagen + badge
             ClipRRect(
               borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(12)),
+                  const BorderRadius.vertical(top: Radius.circular(14)),
               child: Stack(
                 children: [
                   Container(
-                    height: 120,
+                    height: 124,
                     color: const Color(0xFFF8F9FB),
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(10),
                     child: (product.imageUrl == null ||
                             product.imageUrl!.isEmpty)
                         ? const Center(

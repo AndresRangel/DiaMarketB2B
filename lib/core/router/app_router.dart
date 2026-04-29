@@ -13,6 +13,7 @@ import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/cart/presentation/pages/cart_page.dart';
 import '../../features/catalog/presentation/pages/home_page.dart';
 import '../../features/catalog/presentation/pages/product_detail_page.dart';
+import '../../features/catalog/presentation/pages/product_list_page.dart';
 import '../../features/catalog/presentation/pages/search_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/promotions/presentation/pages/promotions_page.dart';
@@ -98,6 +99,18 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: AppRoutes.search,
         builder: (_, _) => const SearchPage(),
+      ),
+
+      // ── Lista de productos por categoría ─────────────────────────────
+      GoRoute(
+        path: AppRoutes.productList,
+        builder: (_, state) {
+          final categoryId = state.uri.queryParameters['categoryId'];
+          final name = state.uri.queryParameters['name'] != null
+              ? Uri.decodeComponent(state.uri.queryParameters['name']!)
+              : null;
+          return ProductListPage(categoryId: categoryId, categoryName: name);
+        },
       ),
 
       // ── Detalle de producto (fuera del shell — pantalla completa) ─────
