@@ -1958,3 +1958,95 @@ En modo normal:
 - Explicar claro
 - Ser estructurado
 - Priorizar entendimiento sobre brevedad
+
+---
+
+## 26. SISTEMA DE DISEÑO UI/UX (Design System)
+
+> Auditado con ui-ux-pro-max + impeccable en 2026-05.
+> Fuente de verdad visual para toda pantalla nueva.
+
+### Archivos del design system
+
+| Archivo | Propósito |
+|---|---|
+| `PRODUCT.md` | Perfil del producto, usuarios, tono, anti-referencias |
+| `DESIGN.md` | Tokens de color, tipografía, espaciado, radios, sombras, animaciones |
+| `design-system/MASTER.md` | Checklist de componentes, reglas por token, notas Flutter |
+| `design-system/pages/*.md` | Overrides por pantalla (product_card, home, detail, shimmer) |
+
+### Reglas de UI (adicionales a sección 19)
+
+41. **Touch targets ≥ 44px en TODOS los elementos interactivos.** Sin excepción. Actualmente violado en `_AddButton`, `_QtySelector`, `_InlineBtn` (34px) — corregir en el primer sprint de polish.
+
+42. **Usar tokens de diseño, nunca magic numbers:**
+    - Espaciado: `AppSpacing.xs/sm/md/base/lg/xl/xxl` (crear en `lib/shared/constants/app_spacing.dart`)
+    - Radios: `AppRadius.xs/sm/md/lg/xl/full` (crear en `lib/shared/constants/app_radius.dart`)
+    - Tipografía: `AppTextStyles.titleLarge / bodyMedium / labelLarge...` (crear en `lib/shared/constants/app_text_styles.dart`)
+    - Sombras: `AppShadows.level1/2/3/4` (crear en `lib/shared/constants/app_shadows.dart`)
+
+43. **ShimmerBox colores derivados del tema**, nunca `Color(0xFFE0E0E0)` hardcodeado. Ver `design-system/pages/shimmer.md`.
+
+44. **Cero colores hex en archivos de widget de producción.** Toda excepción debe tener un comentario justificando por qué no puede ir en el tema. El único permitido actualmente: splash neutral fallback.
+
+45. **Antes de crear cualquier pantalla nueva:** leer `PRODUCT.md` + `DESIGN.md` + `design-system/MASTER.md`. Crear `design-system/pages/<nueva-pantalla>.md` con los overrides específicos antes de codificar.
+
+46. **Checklist de calidad visual (adicional al checklist web de sección 9-bis):**
+
+    **Calidad base (mobile + web):**
+    - [ ] Touch targets ≥ 44px
+    - [ ] Sin colores hex hardcodeados
+    - [ ] Spacing via AppSpacing tokens
+    - [ ] Tipografía via AppTextStyles
+    - [ ] Shimmer colores themed
+    - [ ] `GestureDetector` para taps → reemplazado por `InkWell` + `Material`
+    - [ ] Skeletons reflejan EXACTAMENTE el layout del contenido real
+
+    **Web profesional (desktop ≥ 900px):**
+    - [ ] Grid de productos: ≥ 4 columnas en desktop
+    - [ ] Filtros: sidebar fijo (no sheet/modal)
+    - [ ] Hover states en cards con `MouseRegion` + `AnimatedContainer`
+    - [ ] Cursor `SystemMouseCursors.click` en elementos interactivos
+    - [ ] Breadcrumbs visibles en páginas con jerarquía
+    - [ ] TopBar completa (no AppBar de móvil)
+    - [ ] Botones con ancho propio (no full-width) en desktop
+    - [ ] Layout de carrito/checkout: dos columnas (tabla + resumen sticky)
+    - [ ] Sin espacio vacío lateral desperdiciado
+    - [ ] La pantalla a 1440px se ve como un portal B2B — no como app móvil
+
+### Regla dual mobile + web (OBLIGATORIA)
+
+**Toda pantalla implementada debe verse bien en móvil Y debe verse como un portal B2B profesional en navegador web.**
+
+No alcanza con que "funcione" en web. La versión web debe competir visualmente con plataformas como Shopify B2B o portales de distribución modernos — no parecer una app móvil estirada en Chrome.
+
+#### La prueba rápida de "¿es web profesional?"
+Abrir en Chrome a 1440px ancho. Si alguno de estos problemas existe → no está listo:
+- Espacio vacío lateral sin usar (falta layout de desktop)
+- Botones full-width en desktop (diseño mobile sin adaptar)
+- Sin hover states en cards y elementos clickeables
+- Filtros en sheet/modal en lugar de sidebar fijo
+- Grid de 2 columnas igual que en móvil
+- AppBar igual que en móvil sin adaptación a TopBar
+- Sin cursor pointer al pasar sobre elementos clickeables
+- Sin breadcrumbs en páginas con profundidad ≥ 2 niveles
+
+#### Adaptaciones obligatorias en desktop (≥ 900px)
+- **Grid de productos:** mínimo 4 columnas (hasta 6 en pantallas anchas)
+- **Filtros:** sidebar fijo de 240px, siempre visible (no sheet/modal)
+- **TopBar:** logo izquierda + búsqueda expandida centro + carrito con valor derecha
+- **Hover states:** `MouseRegion` + `AnimatedContainer` en todas las cards
+- **Cursor:** `SystemMouseCursors.click` en elementos interactivos
+- **Breadcrumbs:** en ProductListPage y ProductDetailPage
+- **Carrito/Checkout:** layout de dos columnas (productos izquierda, resumen derecha)
+- **Botones:** ancho propio, no `SizedBox(width: infinity)` en desktop
+
+Ver detalles de implementación en `design-system/MASTER.md` → sección "Plataforma: Mobile Y Web profesional".
+
+### Filosofía visual para este proyecto
+
+- **Restrained color strategy:** un color de marca lleva las acciones. Neutrales para estructura.
+- **Densidad con ritmo:** B2B necesita más info por pantalla, pero con espaciado que respira.
+- **Confianza a través de números:** precio, inventario, historial — legibles de un vistazo.
+- **No hay UI "de demo."** Si un comprador mayorista lo vería y pensaría "esto parece una app de prueba", hay que rehacerlo.
+- **Font family:** Inter o Plus Jakarta Sans (configurado via `theme.fontFamily`) para look moderno. Roboto como fallback de la plataforma.
