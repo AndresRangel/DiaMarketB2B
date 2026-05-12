@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Datos de marca: logo, nombre de la app, URLs de imágenes.
 /// El backend los entrega en el servicio S43.
@@ -93,7 +94,7 @@ class AppThemeData {
     textPrimaryColor: Color(0xFF1A1A2E),
     textSecondaryColor: Color(0xFF666666),
     buttonTextColor: Color(0xFFFFFFFF),
-    fontFamily: 'Roboto',
+    fontFamily: 'Inter',
   );
 
   Map<String, dynamic> toJson() => {
@@ -306,15 +307,23 @@ class RemoteAppConfig {
       );
 
   /// Convierte el tema a un [ThemeData] de Flutter para pasarlo al MaterialApp.
-  ThemeData toMaterialTheme() => ThemeData(
-        primaryColor: theme.primaryColor,
-        colorScheme: ColorScheme.light(
-          primary: theme.primaryColor,
-          secondary: theme.accentColor,
-          error: theme.errorColor,
-          surface: theme.surfaceColor,
-        ),
-        scaffoldBackgroundColor: theme.backgroundColor,
-        fontFamily: theme.fontFamily,
-      );
+  ThemeData toMaterialTheme() {
+    final resolvedFontFamily = GoogleFonts.getFont(theme.fontFamily).fontFamily;
+
+    return ThemeData(
+      primaryColor: theme.primaryColor,
+      colorScheme: ColorScheme.light(
+        primary: theme.primaryColor,
+        secondary: theme.accentColor,
+        error: theme.errorColor,
+        surface: theme.surfaceColor,
+      ),
+      scaffoldBackgroundColor: theme.backgroundColor,
+      textTheme: GoogleFonts.getTextTheme(
+        theme.fontFamily,
+        ThemeData.light().textTheme,
+      ),
+      fontFamily: resolvedFontFamily,
+    );
+  }
 }

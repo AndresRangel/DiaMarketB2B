@@ -8,6 +8,24 @@ import 'search_state.dart';
 
 part 'search_notifier.g.dart';
 
+// keepAlive: persiste en memoria mientras la app esté abierta (survives navigation).
+@Riverpod(keepAlive: true)
+class RecentSearches extends _$RecentSearches {
+  @override
+  List<String> build() => [];
+
+  void add(String query) {
+    final q = query.trim();
+    if (q.isEmpty) return;
+    state = [q, ...state.where((s) => s != q)].take(6).toList();
+  }
+
+  void remove(String query) =>
+      state = state.where((s) => s != query).toList();
+
+  void clearAll() => state = [];
+}
+
 @riverpod
 class SearchNotifier extends _$SearchNotifier {
   Timer? _debounce;
@@ -30,6 +48,8 @@ class SearchNotifier extends _$SearchNotifier {
     // Espera 400ms desde el último keystroke antes de ir a la red.
     state = const SearchState.loading();
     _debounce = Timer(const Duration(milliseconds: 400), () async {
+      // Guarda el query final (debounced), no cada letra parcial.
+      ref.read(recentSearchesProvider.notifier).add(query.trim());
       final useCase = ref.read(searchProductsUseCaseProvider);
       final result = await useCase(query: query.trim());
 

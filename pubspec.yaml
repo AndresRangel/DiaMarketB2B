@@ -29,6 +29,9 @@ dependencies:
   # ── Manejo funcional de errores ───────────────────────────────────────────
   fpdart: ^1.2.0                  # Either<Failure, T> — retorno funcional sin excepciones
 
+  # ── Tipografía ───────────────────────────────────────────────────────────
+  google_fonts: ^6.2.1            # Fuentes Google (Inter como default, soporta white-label)
+
   # ── Internacionalización ──────────────────────────────────────────────────
   easy_localization: ^3.0.8      # Sistema de traducciones multi-idioma (.tr())
 

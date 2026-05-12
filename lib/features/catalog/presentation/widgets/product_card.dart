@@ -1,118 +1,527 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import '../../../../shared/utils/nav.dart';
 
+import '../../../../core/theme/app_config_model.dart';
 import '../../../../core/theme/theme_notifier.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../shared/constants/app_radius.dart';
+import '../../../../shared/constants/app_shadows.dart';
+import '../../../../shared/constants/app_spacing.dart';
+import '../../../../shared/constants/app_text_styles.dart';
 import '../../domain/entities/product_entity.dart';
 import '../../../cart/presentation/notifiers/cart_notifier.dart';
 
-class ProductCard extends ConsumerWidget {
-  const ProductCard({super.key, required this.product});
+// ── ProductCard — grid (desktop) y secciones con botón opcional ───────────────
+
+class ProductCard extends ConsumerStatefulWidget {
+  const ProductCard({
+    super.key,
+    required this.product,
+    this.showAddButton = true,
+  });
 
   final ProductEntity product;
+  final bool showAddButton;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProductCard> createState() => _ProductCardState();
+}
+
+class _ProductCardState extends ConsumerState<ProductCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
     final locale = ref.watch(themeProvider.select((c) => c.locale));
-    final primaryColor =
-        ref.watch(themeProvider.select((c) => c.theme.primaryColor));
-    final qty =
-        ref.watch(cartProvider.select((c) => c.quantityOf(product.sku)));
+    final theme = ref.watch(themeProvider);
+    final primary = theme.theme.primaryColor;
+    final qty = ref.watch(
+        cartProvider.select((c) => c.quantityOf(widget.product.sku)));
+    final inCart = qty > 0;
+    final product = widget.product;
+    final hasDiscount = product.discount > 0;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      elevation: qty > 0 ? 3 : 1,
-      shadowColor: qty > 0
-          ? primaryColor.withValues(alpha: 0.25)
-          : Colors.black.withValues(alpha: 0.08),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: qty > 0
-            ? BorderSide(
-                color: primaryColor.withValues(alpha: 0.4), width: 1.5)
-            : BorderSide.none,
-      ),
-      color: Colors.white,
-      child: InkWell(
-        onTap: () => context.push('/product/${product.sku}'),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Imagen + badge ───────────────────────────────────────────
-            Expanded(
-              child: Stack(
-                children: [
-                  _ProductImage(imageUrl: product.imageUrl),
-                  if (qty > 0)
-                    Positioned(
-                      top: 6,
-                      right: 6,
-                      child: _CartBadge(qty: qty, color: primaryColor),
-                    ),
-                ],
-              ),
-            ),
+    final activeShadow = inCart || _hovered;
 
-            // ── Nombre + precio ──────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        decoration: BoxDecoration(
+          color: theme.theme.surfaceColor,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: activeShadow
+                ? primary.withValues(alpha: 0.30)
+                : theme.theme.textSecondaryColor.withValues(alpha: 0.10),
+            width: activeShadow ? 1.5 : 1,
+          ),
+          boxShadow: activeShadow
+              ? AppShadows.level3(primary)
+              : AppShadows.level1,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => context.openProductDetail(product.sku),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    product.name,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF1A1A2E),
-                      height: 1.3,
+                  // ── Imagen ──────────────────────────────────────────────
+                  Expanded(
+                    flex: 6,
+                    child: Stack(
+                      children: [
+                        _ProductImage(
+                          imageUrl: product.imageUrl,
+                          backgroundColor: theme.theme.surfaceColor,
+                          placeholderColor: theme.theme.textSecondaryColor
+                              .withValues(alpha: 0.25),
+                        ),
+                        if (hasDiscount)
+                          Positioned(
+                            top: AppSpacing.sm,
+                            left: AppSpacing.sm,
+                            child: _DiscountBadge(discount: product.discount),
+                          ),
+                        if (inCart)
+                          Positioned(
+                            top: AppSpacing.sm,
+                            right: AppSpacing.sm,
+                            child: _CartBadge(qty: qty, color: primary),
+                          ),
+                      ],
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 5),
-                  Text(
-                    CurrencyFormatter.format(product.basePrice, locale),
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: primaryColor,
+
+                  Container(
+                    height: 1,
+                    color: theme.theme.textSecondaryColor
+                        .withValues(alpha: 0.07),
+                  ),
+
+                  // ── Info ─────────────────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Nombre
+                        Text(
+                          product.name,
+                          style: AppTextStyles.productName.copyWith(
+                            color: theme.theme.textPrimaryColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        // SKU — referencia clave en B2B
+                        Text(
+                          product.sku,
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: theme.theme.textSecondaryColor
+                                .withValues(alpha: 0.6),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+
+                        // Precio
+                        _PriceDisplay(
+                          product: product,
+                          locale: locale,
+                          primary: primary,
+                          textSecondary: theme.theme.textSecondaryColor,
+                          successColor: theme.theme.successColor,
+                        ),
+
+                        if (widget.showAddButton) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          if (qty == 0)
+                            _AddBtn(
+                              primaryColor: primary,
+                              onTap: () => ref
+                                  .read(cartProvider.notifier)
+                                  .addItem(product),
+                            )
+                          else
+                            _FullQtySelector(
+                              qty: qty,
+                              primaryColor: primary,
+                              onDecrement: () => ref
+                                  .read(cartProvider.notifier)
+                                  .updateQuantity(product.sku, qty - 1),
+                              onIncrement: () => ref
+                                  .read(cartProvider.notifier)
+                                  .updateQuantity(product.sku, qty + 1),
+                            ),
+                        ],
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-
-            // ── Botón / selector de cantidad ─────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-              child: qty == 0
-                  ? _AddButton(
-                      primaryColor: primaryColor,
-                      onTap: () =>
-                          ref.read(cartProvider.notifier).addItem(product),
-                    )
-                  : _QtySelector(
-                      qty: qty,
-                      primaryColor: primaryColor,
-                      onDecrement: () => ref
-                          .read(cartProvider.notifier)
-                          .updateQuantity(product.sku, qty - 1),
-                      onIncrement: () => ref
-                          .read(cartProvider.notifier)
-                          .updateQuantity(product.sku, qty + 1),
-                    ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ── Badge de cantidad ─────────────────────────────────────────────────────────
+// ── FeaturedProductCard — scroll horizontal en HomePage (mobile) ──────────────
+
+class FeaturedProductCard extends ConsumerStatefulWidget {
+  const FeaturedProductCard({
+    super.key,
+    required this.product,
+    this.showAddButton = true,
+  });
+
+  final ProductEntity product;
+  final bool showAddButton;
+
+  @override
+  ConsumerState<FeaturedProductCard> createState() =>
+      _FeaturedProductCardState();
+}
+
+class _FeaturedProductCardState extends ConsumerState<FeaturedProductCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = ref.watch(themeProvider.select((c) => c.locale));
+    final theme = ref.watch(themeProvider);
+    final primary = theme.theme.primaryColor;
+    final qty = ref.watch(
+        cartProvider.select((c) => c.quantityOf(widget.product.sku)));
+    final inCart = qty > 0;
+    final product = widget.product;
+    final hasDiscount = product.discount > 0;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: () => context.openProductDetail(product.sku),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 152,
+          decoration: BoxDecoration(
+            color: theme.theme.surfaceColor,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(
+              color: (inCart || _hovered)
+                  ? primary.withValues(alpha: 0.30)
+                  : theme.theme.textSecondaryColor.withValues(alpha: 0.10),
+              width: (inCart || _hovered) ? 1.5 : 1,
+            ),
+            boxShadow: (inCart || _hovered)
+                ? AppShadows.level3(primary)
+                : AppShadows.level1,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Imagen
+                Stack(
+                  children: [
+                    Container(
+                      height: 112,
+                      color: theme.theme.surfaceColor,
+                      padding: const EdgeInsets.all(AppSpacing.sm),
+                      child: (product.imageUrl == null ||
+                              product.imageUrl!.isEmpty)
+                          ? Center(
+                              child: Icon(
+                                Icons.inventory_2_outlined,
+                                color: theme.theme.textSecondaryColor
+                                    .withValues(alpha: 0.25),
+                                size: 40,
+                              ),
+                            )
+                          : CachedNetworkImage(
+                              imageUrl: product.imageUrl!,
+                              fit: BoxFit.contain,
+                              width: double.infinity,
+                              placeholder: (_, _) => Center(
+                                child: Icon(
+                                  Icons.inventory_2_outlined,
+                                  color: theme.theme.textSecondaryColor
+                                      .withValues(alpha: 0.25),
+                                  size: 40,
+                                ),
+                              ),
+                              errorWidget: (_, _, _) => Center(
+                                child: Icon(
+                                  Icons.inventory_2_outlined,
+                                  color: theme.theme.textSecondaryColor
+                                      .withValues(alpha: 0.25),
+                                  size: 40,
+                                ),
+                              ),
+                            ),
+                    ),
+                    if (hasDiscount)
+                      Positioned(
+                        top: AppSpacing.xs,
+                        left: AppSpacing.xs,
+                        child: _DiscountBadge(
+                            discount: product.discount, compact: true),
+                      ),
+                    if (inCart)
+                      Positioned(
+                        top: AppSpacing.sm,
+                        right: AppSpacing.sm,
+                        child: _CartBadge(qty: qty, color: primary),
+                      ),
+                  ],
+                ),
+
+                Container(
+                  height: 1,
+                  color:
+                      theme.theme.textSecondaryColor.withValues(alpha: 0.07),
+                ),
+
+                // Info
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.sm,
+                      AppSpacing.sm,
+                      AppSpacing.sm,
+                      AppSpacing.sm,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          product.name,
+                          style: AppTextStyles.productNameSmall.copyWith(
+                            color: theme.theme.textPrimaryColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          product.sku,
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: theme.theme.textSecondaryColor
+                                .withValues(alpha: 0.55),
+                            fontSize: 10,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        _PriceDisplay(
+                          product: product,
+                          locale: locale,
+                          primary: primary,
+                          textSecondary: theme.theme.textSecondaryColor,
+                          successColor: theme.theme.successColor,
+                          compact: true,
+                        ),
+                        if (widget.showAddButton) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          if (qty == 0)
+                            _AddBtn(
+                              primaryColor: primary,
+                              onTap: () => ref
+                                  .read(cartProvider.notifier)
+                                  .addItem(product),
+                            )
+                          else
+                            _FullQtySelector(
+                              qty: qty,
+                              primaryColor: primary,
+                              onDecrement: () => ref
+                                  .read(cartProvider.notifier)
+                                  .updateQuantity(product.sku, qty - 1),
+                              onIncrement: () => ref
+                                  .read(cartProvider.notifier)
+                                  .updateQuantity(product.sku, qty + 1),
+                            ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Precio con lógica de descuento e IVA ─────────────────────────────────────
+
+class _PriceDisplay extends StatelessWidget {
+  const _PriceDisplay({
+    required this.product,
+    required this.locale,
+    required this.primary,
+    required this.textSecondary,
+    required this.successColor,
+    this.compact = false,
+  });
+
+  final ProductEntity product;
+  final LocaleConfig locale;
+  final Color primary;
+  final Color textSecondary;
+  final Color successColor;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasDiscount = product.discount > 0;
+    final hasIva = product.taxRate > 0;
+    final discountedBase = product.basePrice - product.discountAmount;
+
+    if (hasDiscount) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Precio original tachado
+          Text(
+            CurrencyFormatter.format(product.basePrice, locale),
+            style: (compact
+                    ? AppTextStyles.labelSmall
+                    : AppTextStyles.bodyMedium)
+                .copyWith(
+              color: textSecondary.withValues(alpha: 0.5),
+              decoration: TextDecoration.lineThrough,
+              decorationColor: textSecondary.withValues(alpha: 0.5),
+            ),
+          ),
+          // Precio con descuento + IVA tag
+          Row(
+            children: [
+              Text(
+                CurrencyFormatter.format(discountedBase, locale),
+                style: (compact
+                        ? AppTextStyles.priceSmall
+                        : AppTextStyles.priceMedium)
+                    .copyWith(
+                  color: successColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (hasIva) ...[
+                const SizedBox(width: 4),
+                _IvaTag(
+                    taxRate: product.taxRate, textSecondary: textSecondary),
+              ],
+            ],
+          ),
+        ],
+      );
+    }
+
+    // Sin descuento
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          CurrencyFormatter.format(product.basePrice, locale),
+          style:
+              (compact ? AppTextStyles.priceSmall : AppTextStyles.priceMedium)
+                  .copyWith(
+            color: primary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        if (hasIva) ...[
+          const SizedBox(width: 4),
+          _IvaTag(taxRate: product.taxRate, textSecondary: textSecondary),
+        ],
+      ],
+    );
+  }
+}
+
+// ── Tag IVA sutil ─────────────────────────────────────────────────────────────
+
+class _IvaTag extends StatelessWidget {
+  const _IvaTag({required this.taxRate, required this.textSecondary});
+  final double taxRate;
+  final Color textSecondary;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = '+IVA ${(taxRate * 100).round()}%';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: textSecondary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.labelSmall.copyWith(
+          color: textSecondary.withValues(alpha: 0.65),
+          fontSize: 9,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Badge descuento en imagen ─────────────────────────────────────────────────
+
+class _DiscountBadge extends StatelessWidget {
+  const _DiscountBadge({required this.discount, this.compact = false});
+  final double discount;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = '-${(discount * 100).round()}%';
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 4 : AppSpacing.sm,
+        vertical: compact ? 2 : AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE53935),
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.labelSmall.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w800,
+          fontSize: compact ? 9 : 11,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Badge cantidad en carrito ─────────────────────────────────────────────────
 
 class _CartBadge extends StatelessWidget {
   const _CartBadge({required this.qty, required this.color});
@@ -122,74 +531,68 @@ class _CartBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.4),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        boxShadow: AppShadows.level3(color),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.shopping_cart, size: 11, color: Colors.white),
-          const SizedBox(width: 3),
-          Text(
-            '$qty',
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ],
+      child: Text(
+        '$qty',
+        style: AppTextStyles.labelSmall.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
 }
 
-// ── Botón "Agregar" ───────────────────────────────────────────────────────────
+// ── Botón "Agregar" full-width ────────────────────────────────────────────────
 
-class _AddButton extends StatelessWidget {
-  const _AddButton({required this.primaryColor, required this.onTap});
+class _AddBtn extends StatelessWidget {
+  const _AddBtn({required this.primaryColor, required this.onTap});
   final Color primaryColor;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 34,
-      child: FilledButton.icon(
-        onPressed: onTap,
-        style: FilledButton.styleFrom(
-          backgroundColor: primaryColor,
-          padding: EdgeInsets.zero,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 36,
+        decoration: BoxDecoration(
+          color: primaryColor,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
-        icon: const Icon(Icons.add, size: 16, color: Colors.white),
-        label: const Text(
-          'Agregar',
-          style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.white),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.add_shopping_cart_outlined,
+                size: 14, color: Colors.white),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              'Agregar',
+              style: AppTextStyles.labelMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ── Selector de cantidad inline ───────────────────────────────────────────────
+// ── Selector cantidad full-width ──────────────────────────────────────────────
 
-class _QtySelector extends StatelessWidget {
-  const _QtySelector({
+class _FullQtySelector extends StatelessWidget {
+  const _FullQtySelector({
     required this.qty,
     required this.primaryColor,
     required this.onDecrement,
@@ -203,43 +606,46 @@ class _QtySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 34,
+    return Container(
+      height: 36,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        color: primaryColor.withValues(alpha: 0.08),
+        border: Border.all(color: primaryColor.withValues(alpha: 0.25)),
+      ),
       child: Row(
         children: [
           Expanded(
-            child: _InlineBtn(
-              icon: qty == 1 ? Icons.delete_outline : Icons.remove,
-              color: qty == 1 ? Colors.red.shade400 : primaryColor,
+            child: GestureDetector(
               onTap: onDecrement,
-              isLeft: true,
+              behavior: HitTestBehavior.opaque,
+              child: Center(
+                child: Icon(
+                  qty == 1 ? Icons.delete_outline : Icons.remove,
+                  size: 16,
+                  color: qty == 1 ? Colors.red.shade400 : primaryColor,
+                ),
+              ),
             ),
           ),
           Container(
             width: 36,
             alignment: Alignment.center,
-            decoration: BoxDecoration(
-              border: Border.symmetric(
-                horizontal: BorderSide(
-                    color: primaryColor.withValues(alpha: 0.25)),
-              ),
-              color: primaryColor.withValues(alpha: 0.05),
-            ),
             child: Text(
               '$qty',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
+              style: AppTextStyles.labelLarge.copyWith(
                 color: primaryColor,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
           Expanded(
-            child: _InlineBtn(
-              icon: Icons.add,
-              color: primaryColor,
+            child: GestureDetector(
               onTap: onIncrement,
-              isLeft: false,
+              behavior: HitTestBehavior.opaque,
+              child: Center(
+                child: Icon(Icons.add, size: 16, color: primaryColor),
+              ),
             ),
           ),
         ],
@@ -248,181 +654,45 @@ class _QtySelector extends StatelessWidget {
   }
 }
 
-class _InlineBtn extends StatelessWidget {
-  const _InlineBtn({
-    required this.icon,
-    required this.color,
-    required this.onTap,
-    required this.isLeft,
-  });
-
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-  final bool isLeft;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 34,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.horizontal(
-            left: isLeft ? const Radius.circular(10) : Radius.zero,
-            right: isLeft ? Radius.zero : const Radius.circular(10),
-          ),
-          border: Border.all(color: color.withValues(alpha: 0.25)),
-        ),
-        child: Icon(icon, size: 15, color: color),
-      ),
-    );
-  }
-}
-
-// ── Imagen ────────────────────────────────────────────────────────────────────
+// ── Imagen del producto ───────────────────────────────────────────────────────
 
 class _ProductImage extends StatelessWidget {
-  const _ProductImage({this.imageUrl});
+  const _ProductImage({
+    this.imageUrl,
+    required this.backgroundColor,
+    required this.placeholderColor,
+  });
+
   final String? imageUrl;
+  final Color backgroundColor;
+  final Color placeholderColor;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFF8F9FB),
-      padding: const EdgeInsets.all(10),
+      color: backgroundColor,
+      padding: const EdgeInsets.all(AppSpacing.sm),
       child: (imageUrl == null || imageUrl!.isEmpty)
-          ? _placeholder()
+          ? _Placeholder(color: placeholderColor)
           : CachedNetworkImage(
               imageUrl: imageUrl!,
               fit: BoxFit.contain,
               width: double.infinity,
-              placeholder: (_, _) => _placeholder(),
-              errorWidget: (_, _, _) => _placeholder(),
+              placeholder: (_, _) => _Placeholder(color: placeholderColor),
+              errorWidget: (_, _, _) => _Placeholder(color: placeholderColor),
             ),
     );
   }
-
-  Widget _placeholder() => const Center(
-        child: Icon(Icons.inventory_2_outlined,
-            color: Color(0xFFCFD8DC), size: 36),
-      );
 }
 
-// ── Featured card ─────────────────────────────────────────────────────────────
-
-class FeaturedProductCard extends ConsumerWidget {
-  const FeaturedProductCard({super.key, required this.product});
-
-  final ProductEntity product;
+class _Placeholder extends StatelessWidget {
+  const _Placeholder({required this.color});
+  final Color color;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final locale = ref.watch(themeProvider.select((c) => c.locale));
-    final primaryColor =
-        ref.watch(themeProvider.select((c) => c.theme.primaryColor));
-    final qty =
-        ref.watch(cartProvider.select((c) => c.quantityOf(product.sku)));
-
-    return GestureDetector(
-      onTap: () => context.push('/product/${product.sku}'),
-      child: Container(
-        width: 152,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: qty > 0
-                  ? primaryColor.withValues(alpha: 0.2)
-                  : Colors.black.withValues(alpha: 0.06),
-              blurRadius: qty > 0 ? 10 : 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-          border: qty > 0
-              ? Border.all(
-                  color: primaryColor.withValues(alpha: 0.4), width: 1.5)
-              : null,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Imagen + badge
-            ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(14)),
-              child: Stack(
-                children: [
-                  Container(
-                    height: 124,
-                    color: const Color(0xFFF8F9FB),
-                    padding: const EdgeInsets.all(10),
-                    child: (product.imageUrl == null ||
-                            product.imageUrl!.isEmpty)
-                        ? const Center(
-                            child: Icon(Icons.inventory_2_outlined,
-                                color: Color(0xFFCFD8DC), size: 40),
-                          )
-                        : CachedNetworkImage(
-                            imageUrl: product.imageUrl!,
-                            fit: BoxFit.contain,
-                            width: double.infinity,
-                            placeholder: (_, _) => const Center(
-                              child: Icon(Icons.inventory_2_outlined,
-                                  color: Color(0xFFCFD8DC), size: 40),
-                            ),
-                            errorWidget: (_, _, _) => const Center(
-                              child: Icon(Icons.inventory_2_outlined,
-                                  color: Color(0xFFCFD8DC), size: 40),
-                            ),
-                          ),
-                  ),
-                  if (qty > 0)
-                    Positioned(
-                      top: 6,
-                      right: 6,
-                      child: _CartBadge(qty: qty, color: primaryColor),
-                    ),
-                ],
-              ),
-            ),
-
-            // Info
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF1A1A2E),
-                        height: 1.3,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const Spacer(),
-                    Text(
-                      CurrencyFormatter.format(product.basePrice, locale),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: primaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+  Widget build(BuildContext context) {
+    return Center(
+      child: Icon(Icons.inventory_2_outlined, color: color, size: 36),
     );
   }
 }

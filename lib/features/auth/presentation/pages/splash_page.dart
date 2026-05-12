@@ -6,16 +6,6 @@ import '../../../../core/theme/app_config_model.dart';
 import '../../../../core/theme/theme_notifier.dart';
 import '../notifiers/auth_notifier.dart';
 
-/// Pantalla de arranque de la app.
-///
-/// Responsabilidades:
-/// 1. Muestra la identidad visual mientras la app se inicializa.
-/// 2. Lanza en paralelo la carga del tema (S43) y la verificación de sesión.
-/// 3. NO navega manualmente — el guard del GoRouter detecta el cambio de
-///    AuthState y redirige automáticamente a /home o /login.
-///
-/// ConsumerStatefulWidget nos da acceso a ref Y al ciclo de vida del widget
-/// (initState, dispose), que necesitamos para disparar la inicialización.
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
 
@@ -24,8 +14,6 @@ class SplashPage extends ConsumerStatefulWidget {
 }
 
 class _SplashPageState extends ConsumerState<SplashPage> {
-  // true cuando loadConfig() ya terminó (con éxito o fallo).
-  // Controla qué splash se muestra: neutro (cargando) vs branded (config lista).
   bool _configLoaded = false;
 
   @override
@@ -36,199 +24,407 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
   Future<void> _initialize() async {
     await ref.read(themeProvider.notifier).loadConfig('');
-
-    // Config lista (o fallback si falló) → cambiamos al splash branded.
     if (mounted) setState(() => _configLoaded = true);
-
     await Future.delayed(const Duration(seconds: 2));
-
     await ref.read(authProvider.notifier).initialize();
   }
 
   @override
   Widget build(BuildContext context) {
     final config = ref.watch(themeProvider);
-
-    // Si config sigue siendo el fallback puro Y loadConfig() aún no terminó
-    // (primer arranque sin cache) → splash neutro sin marca.
-    // En todos los demás casos (cache preloaded, config ya llegó) → branded.
-    // identical() porque RemoteAppConfig no es freezed — compara referencia.
-    // RemoteAppConfig.fallback es const, ThemeNotifier.build() devuelve la misma
-    // instancia cuando no hay cache → identical() es true solo en ese caso.
     final isFallback = identical(config, RemoteAppConfig.fallback);
     if (isFallback && !_configLoaded) return const _NeutralSplash();
-
     return _BrandedSplash(config: config);
   }
 }
 
-// ── Splash neutro ─────────────────────────────────────────────────────────────
-// Se muestra ANTES de que llegue la config del backend.
-// Diseño intencional: blanco, sin colores de marca, sin nombre de cliente.
-class _NeutralSplash extends StatelessWidget {
+// ── Splash neutro — antes de que llegue la config ────────────────────────────
+// Gradiente slate oscuro neutral — sin colores de marca pero con presencia visual.
+
+class _NeutralSplash extends StatefulWidget {
   const _NeutralSplash();
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          // ── Contenido central ──────────────────────────────────────────────
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Ícono genérico: bolsa de compras con tono neutro gris-azulado.
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0F4F8),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: const Icon(
-                    Icons.shopping_bag_outlined,
-                    size: 48,
-                    color: Color(0xFF90A4AE),
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                // Texto principal
-                const Text(
-                  'Configurando tu experiencia',
-                  style: TextStyle(
-                    color: Color(0xFF37474F),
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.1,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                // Subtexto
-                const Text(
-                  'Esto solo toma un momento...',
-                  style: TextStyle(
-                    color: Color(0xFF90A4AE),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-
-                const SizedBox(height: 40),
-
-                // Progress indicator delgado y ancho
-                SizedBox(
-                  width: 200,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: const LinearProgressIndicator(
-                      minHeight: 3,
-                      backgroundColor: Color(0xFFECEFF1),
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Color(0xFF78909C),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Versión / branding mínimo al pie ──────────────────────────────
-          const Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Text(
-              'Powered by B2B Platform',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Color(0xFFB0BEC5),
-                fontSize: 11,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  State<_NeutralSplash> createState() => _NeutralSplashState();
 }
 
-// ── Splash branded ────────────────────────────────────────────────────────────
-// Se muestra DESPUÉS de que la config del backend está lista.
-// Usa colores, logo y nombre del cliente.
-class _BrandedSplash extends StatelessWidget {
-  const _BrandedSplash({required this.config});
+class _NeutralSplashState extends State<_NeutralSplash>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fade;
+  late Animation<double> _scale;
 
-  final RemoteAppConfig config;
+  static const _dark = Color(0xFF1A2535);
+  static const _mid  = Color(0xFF243447);
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    )..forward();
+
+    _fade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _scale = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: config.theme.primaryColor,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_dark, _mid],
+          ),
+        ),
+        child: Stack(
           children: [
-            const Spacer(),
-
-            // Logo del cliente desde CDN. Fallback: ícono genérico blanco.
-            SizedBox(
-              width: 160,
-              height: 160,
-              child: config.branding.splashLogoUrl.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: config.branding.splashLogoUrl,
-                      fit: BoxFit.contain,
-                      placeholder: (_, _) => const CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        strokeWidth: 2,
-                      ),
-                      errorWidget: (_, _, _) => Icon(
-                        Icons.store_rounded,
-                        size: 72,
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                    )
-                  : Icon(
-                      Icons.store_rounded,
-                      size: 72,
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
+            // Círculos decorativos sutiles
+            Positioned(
+              top: -60,
+              right: -60,
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.04),
+                ),
+              ),
             ),
-
-            const SizedBox(height: 24),
-
-            Text(
-              config.branding.appName,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
+            Positioned(
+              bottom: -80,
+              left: -80,
+              child: Container(
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.04),
+                ),
               ),
             ),
 
-            const Spacer(),
+            // Contenido central animado
+            FadeTransition(
+              opacity: _fade,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Spacer(),
 
-            Padding(
-              padding: const EdgeInsets.only(bottom: 56),
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  Colors.white.withValues(alpha: 0.7),
+                    ScaleTransition(
+                      scale: _scale,
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.shopping_bag_outlined,
+                          size: 48,
+                          color: Colors.white.withValues(alpha: 0.85),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    Text(
+                      'Configurando tu experiencia',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.90),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    Text(
+                      'Esto solo toma un momento...',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.50),
+                        fontSize: 13,
+                      ),
+                    ),
+
+                    const SizedBox(height: 44),
+
+                    _LoadingDots(
+                      color: Colors.white.withValues(alpha: 0.60),
+                    ),
+
+                    const Spacer(),
+
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 40),
+                      child: Text(
+                        'Powered by B2B Platform',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          fontSize: 11,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                strokeWidth: 2.5,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+// ── Splash branded — con config del backend ───────────────────────────────────
+
+class _BrandedSplash extends StatefulWidget {
+  const _BrandedSplash({required this.config});
+  final RemoteAppConfig config;
+
+  @override
+  State<_BrandedSplash> createState() => _BrandedSplashState();
+}
+
+class _BrandedSplashState extends State<_BrandedSplash>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fade;
+  late Animation<double> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    )..forward();
+
+    _fade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _slide = Tween<double>(begin: 0.06, end: 0.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Color get _primaryDark {
+    final hsl = HSLColor.fromColor(widget.config.theme.primaryColor);
+    return hsl
+        .withLightness((hsl.lightness - 0.15).clamp(0.0, 1.0))
+        .toColor();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = widget.config.theme.primaryColor;
+
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [primary, _primaryDark],
+          ),
+        ),
+        child: Stack(
+          children: [
+            // Círculos decorativos
+            Positioned(
+              top: -80,
+              right: -80,
+              child: Container(
+                width: 280,
+                height: 280,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.06),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -100,
+              left: -100,
+              child: Container(
+                width: 360,
+                height: 360,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.06),
+                ),
+              ),
+            ),
+
+            // Contenido centrado con animación
+            FadeTransition(
+              opacity: _fade,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: Offset(0, _slide.value),
+                  end: Offset.zero,
+                ).animate(_controller),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Spacer(),
+
+                      // Logo
+                      SizedBox(
+                        width: 140,
+                        height: 140,
+                        child: widget.config.branding.splashLogoUrl.isNotEmpty
+                            ? CachedNetworkImage(
+                                imageUrl:
+                                    widget.config.branding.splashLogoUrl,
+                                fit: BoxFit.contain,
+                                placeholder: (_, _) => Icon(
+                                  Icons.store_rounded,
+                                  size: 72,
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                ),
+                                errorWidget: (_, _, _) => Icon(
+                                  Icons.store_rounded,
+                                  size: 72,
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                ),
+                              )
+                            : Icon(
+                                Icons.store_rounded,
+                                size: 72,
+                                color: Colors.white.withValues(alpha: 0.9),
+                              ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      Text(
+                        widget.config.branding.appName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      Text(
+                        'Portal de compras B2B',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.70),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+
+                      const Spacer(),
+
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 56),
+                        child: _LoadingDots(
+                          color: Colors.white.withValues(alpha: 0.70),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Dots de carga animados ────────────────────────────────────────────────────
+
+class _LoadingDots extends StatefulWidget {
+  const _LoadingDots({required this.color});
+  final Color color;
+
+  @override
+  State<_LoadingDots> createState() => _LoadingDotsState();
+}
+
+class _LoadingDotsState extends State<_LoadingDots>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (_, _) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (i) {
+            // Cada dot se activa en su turno con un offset de fase
+            final phase = ((_controller.value * 3) - i).clamp(0.0, 1.0);
+            final scale = phase < 0.5
+                ? 0.6 + (phase * 0.8)
+                : 1.0 - ((phase - 0.5) * 0.8);
+
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: 8 * scale,
+              height: 8 * scale,
+              decoration: BoxDecoration(
+                color: widget.color.withValues(alpha: 0.4 + (scale * 0.6)),
+                shape: BoxShape.circle,
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 }

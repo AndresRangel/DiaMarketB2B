@@ -2,11 +2,16 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../shared/utils/nav.dart';
 
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/theme/app_config_model.dart';
 import '../../../../core/theme/theme_notifier.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../shared/constants/app_radius.dart';
+import '../../../../shared/constants/app_shadows.dart';
+import '../../../../shared/constants/app_spacing.dart';
+import '../../../../shared/constants/app_text_styles.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/shimmer_box.dart';
 import '../../domain/entities/product_entity.dart';
@@ -15,9 +20,16 @@ import '../notifiers/product_detail_notifier.dart';
 import '../../../cart/presentation/notifiers/cart_notifier.dart';
 
 class ProductDetailPage extends ConsumerWidget {
-  const ProductDetailPage({super.key, required this.sku});
+  const ProductDetailPage({
+    super.key,
+    required this.sku,
+    this.isSheet = false,
+    this.scrollController,
+  });
 
   final String sku;
+  final bool isSheet;
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,7 +37,7 @@ class ProductDetailPage extends ConsumerWidget {
     final config = ref.watch(themeProvider);
 
     return productAsync.when(
-      loading: () => _ProductDetailSkeleton(primaryColor: config.theme.primaryColor),
+      loading: () => const _ProductDetailSkeleton(),
       error: (error, _) => Scaffold(
         appBar: AppBar(),
         body: AppErrorWidget(
@@ -40,7 +52,9 @@ class ProductDetailPage extends ConsumerWidget {
             body: const Center(child: Text('Producto no encontrado')),
           );
         }
-        return _ProductDetailScreen(product: product, config: config, ref: ref);
+        return _ProductDetailScreen(
+            product: product, config: config, ref: ref,
+            isSheet: isSheet, scrollController: scrollController);
       },
     );
   }
@@ -53,11 +67,15 @@ class _ProductDetailScreen extends StatefulWidget {
     required this.product,
     required this.config,
     required this.ref,
+    this.isSheet = false,
+    this.scrollController,
   });
 
   final ProductEntity product;
   final RemoteAppConfig config;
   final WidgetRef ref;
+  final bool isSheet;
+  final ScrollController? scrollController;
 
   @override
   State<_ProductDetailScreen> createState() => _ProductDetailScreenState();
@@ -69,6 +87,10 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
   ProductEntity get product => widget.product;
   RemoteAppConfig get config => widget.config;
   Color get primary => config.theme.primaryColor;
+  Color get textPrimary => config.theme.textPrimaryColor;
+  Color get textSecondary => config.theme.textSecondaryColor;
+  Color get surface => config.theme.surfaceColor;
+  Color get background => config.theme.backgroundColor;
   LocaleConfig get locale => config.locale;
 
   double get _unitPrice => product.finalPrice;
@@ -83,98 +105,73 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
     widget.ref
         .read(cartProvider.notifier)
         .addItemWithQuantity(product, _quantity);
-
     _showToast(context, '$_quantity × ${product.name} agregado al carrito');
   }
 
   void _showToast(BuildContext context, String message) {
     final overlay = Overlay.of(context);
+    final isDesktop =
+        MediaQuery.sizeOf(context).width >= Breakpoints.tablet;
+    final bottomPad = MediaQuery.of(context).padding.bottom;
     late OverlayEntry entry;
 
     entry = OverlayEntry(
-      builder: (_) => Positioned(
-        bottom: MediaQuery.of(context).padding.bottom + 72,
-        left: 16,
-        right: 16,
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A2E),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    message,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: () {
-                    entry.remove();
-                    context.go('/cart');
-                  },
-                  child: Text(
-                    'Ver carrito',
-                    style: TextStyle(
-                      color: primary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      builder: (_) => _CartToast(
+        message: message,
+        primaryColor: primary,
+        successColor: config.theme.successColor,
+        surfaceColor: surface,
+        textPrimary: textPrimary,
+        textSecondary: textSecondary,
+        isDesktop: isDesktop,
+        bottomPad: bottomPad,
+        onViewCart: () {
+          entry.remove();
+          if (widget.isSheet) {
+            // Cerrar sheet primero, luego navegar en el frame siguiente
+            final nav = Navigator.of(context);
+            nav.pop();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (nav.context.mounted) {
+                nav.context.replace('/cart');
+              }
+            });
+          } else {
+            context.replace('/cart');
+          }
+        },
+        onDismiss: () => entry.remove(),
       ),
     );
 
     overlay.insert(entry);
-    Future.delayed(const Duration(seconds: 3), () {
-      if (entry.mounted) entry.remove();
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Datos desde catálogo en cache (no hace request adicional)
     final catalogAsync = widget.ref.read(catalogProvider);
     String? categoryName;
     List<ProductEntity> related = [];
 
     if (catalogAsync.hasValue) {
       final catalog = catalogAsync.value!;
-
       categoryName = catalog.categories
           .where((c) => c.id == product.categoryId)
           .map((c) => c.name.split(' - ').first.trim())
           .firstOrNull;
 
-      // Productos relacionados: misma categoría primero, luego relleno con otros
       final sameCategory = catalog.products
-          .where((p) => p.sku != product.sku && p.categoryId == product.categoryId)
+          .where((p) =>
+              p.sku != product.sku && p.categoryId == product.categoryId)
           .take(10)
           .toList();
 
       related = [...sameCategory];
-
       if (related.length < 6) {
         final others = catalog.products
-            .where((p) => p.sku != product.sku && p.categoryId != product.categoryId)
+            .where((p) =>
+                p.sku != product.sku &&
+                p.categoryId != product.categoryId)
             .take(10 - related.length)
             .toList();
         related.addAll(others);
@@ -183,8 +180,8 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
 
     final isDesktop =
         MediaQuery.sizeOf(context).width >= Breakpoints.tablet;
-
     if (isDesktop) return _buildDesktopLayout(context, categoryName, related);
+    if (widget.isSheet) return _buildSheetLayout(context, categoryName, related);
     return _buildMobileLayout(context, categoryName, related);
   }
 
@@ -196,7 +193,7 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
     List<ProductEntity> related,
   ) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: background,
       appBar: AppBar(
         backgroundColor: primary,
         foregroundColor: Colors.white,
@@ -207,7 +204,7 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
         ),
         title: Text(
           product.name,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          style: AppTextStyles.titleSmall.copyWith(color: Colors.white),
           overflow: TextOverflow.ellipsis,
         ),
       ),
@@ -216,43 +213,26 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1200),
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppSpacing.xl),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Columna izquierda: imagen ─────────────────────────
+                  // ── Columna izquierda: imagen ────────────────────────
                   Expanded(
                     flex: 2,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8F9FB),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                        color: background,
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        boxShadow: AppShadows.level1,
                       ),
-                      padding: const EdgeInsets.all(32),
+                      padding: const EdgeInsets.all(AppSpacing.xxl),
                       height: 420,
-                      child: (product.imageUrl != null &&
-                              product.imageUrl!.isNotEmpty)
-                          ? CachedNetworkImage(
-                              imageUrl: product.imageUrl!,
-                              fit: BoxFit.contain,
-                              placeholder: (_, _) => const Center(
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2),
-                              ),
-                              errorWidget: (_, _, _) => _imagePlaceholder(),
-                            )
-                          : _imagePlaceholder(),
+                      child: _buildImage(),
                     ),
                   ),
 
-                  const SizedBox(width: 24),
+                  const SizedBox(width: AppSpacing.xl),
 
                   // ── Columna derecha: info + precio + cantidad + botón ──
                   Expanded(
@@ -260,18 +240,19 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _buildInfoCard(categoryName),
-                        const SizedBox(height: 12),
-                        _buildPriceCard(),
-                        const SizedBox(height: 12),
-                        _buildQuantityCard(),
-                        const SizedBox(height: 12),
-                        Builder(builder: (ctx) => _buildDesktopAddButton(ctx)),
+                        _desktopCard(_buildInfoContent(categoryName)),
+                        const SizedBox(height: AppSpacing.md),
+                        _desktopCard(_buildPriceContent()),
+                        const SizedBox(height: AppSpacing.md),
+                        _desktopCard(_buildQuantityContent()),
+                        const SizedBox(height: AppSpacing.md),
+                        Builder(
+                            builder: (ctx) => _buildDesktopAddButton(ctx)),
                         if (related.isNotEmpty) ...[
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppSpacing.md),
                           _buildRelatedSection(related, categoryName),
                         ],
-                        const SizedBox(height: 24),
+                        const SizedBox(height: AppSpacing.xl),
                       ],
                     ),
                   ),
@@ -287,34 +268,28 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
   Widget _buildDesktopAddButton(BuildContext innerContext) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.level1,
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.base),
       child: Row(
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Total', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+              Text(
+                'Total',
+                style: AppTextStyles.labelSmall.copyWith(
+                    color: textSecondary),
+              ),
               Text(
                 CurrencyFormatter.format(_total, locale),
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: primary,
-                ),
+                style: AppTextStyles.displayLarge.copyWith(color: primary),
               ),
             ],
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.base),
           Expanded(
             child: SizedBox(
               height: 48,
@@ -323,17 +298,14 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
                 style: FilledButton.styleFrom(
                   backgroundColor: primary,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(AppRadius.md)),
                 ),
                 icon: const Icon(Icons.add_shopping_cart_outlined,
                     color: Colors.white),
-                label: const Text(
+                label: Text(
                   'Agregar al carrito',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                  style: AppTextStyles.titleSmall.copyWith(
+                      color: Colors.white),
                 ),
               ),
             ),
@@ -343,7 +315,7 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
     );
   }
 
-  // ── Mobile: layout original ───────────────────────────────────────────────
+  // ── Mobile: layout principal ──────────────────────────────────────────────
 
   Widget _buildMobileLayout(
     BuildContext context,
@@ -351,23 +323,38 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
     List<ProductEntity> related,
   ) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: background,
       extendBodyBehindAppBar: true,
       appBar: _buildAppBar(),
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(child: _buildImageSection()),
-          SliverToBoxAdapter(child: _buildInfoCard(categoryName)),
-          const SliverToBoxAdapter(child: SizedBox(height: 10)),
-          SliverToBoxAdapter(child: _buildPriceCard()),
-          const SliverToBoxAdapter(child: SizedBox(height: 10)),
-          SliverToBoxAdapter(child: _buildQuantityCard()),
-          if (related.isNotEmpty) ...[
-            const SliverToBoxAdapter(child: SizedBox(height: 10)),
-            SliverToBoxAdapter(child: _buildRelatedSection(related, categoryName)),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Imagen sobre fondo gris — contraste con el sheet blanco
+            _buildImageSection(),
+
+            // Sheet blanco con bordes redondeados y sombra hacia arriba.
+            // El contraste image(gris)/sheet(blanco) + sombra crea el efecto
+            // de sheet flotando sobre la imagen sin necesitar margin negativo.
+            Container(
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.xl),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, -6),
+                  ),
+                ],
+              ),
+              child: _buildMobileContent(categoryName, related),
+            ),
           ],
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
-        ],
+        ),
       ),
       bottomNavigationBar: Builder(
         builder: (innerContext) => _buildStickyBar(innerContext),
@@ -375,31 +362,203 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
     );
   }
 
-  // ── AppBar ────────────────────────────────────────────────────────────────
+  // ── Sheet layout (bottom sheet) ──────────────────────────────────────────
+  // Sin Scaffold: Scaffold dentro de showModalBottomSheet bloquea drag-to-dismiss.
+  // Estructura: ClipRRect → Column([Expanded(scroll)] + [stickyBar])
+
+  Widget _buildSheetLayout(
+    BuildContext context,
+    String? categoryName,
+    List<ProductEntity> related,
+  ) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppRadius.xl)),
+      child: Container(
+        color: surface,
+        child: Column(
+          children: [
+            // Handle visual — el drag lo maneja DraggableScrollableSheet
+            // via el scrollController que recibimos de nav.dart.
+            Container(
+              color: background,
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: textSecondary.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                ),
+              ),
+            ),
+
+            // scrollController conecta el scroll del contenido con el drag
+            // del sheet: al llegar al tope y seguir jalando, el sheet baja.
+            Expanded(
+              child: SingleChildScrollView(
+                controller: widget.scrollController,
+                physics: const ClampingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Stack(
+                      children: [
+                        _buildSheetImageSection(),
+                        Positioned(
+                          top: AppSpacing.xs,
+                          right: AppSpacing.sm,
+                          child: _CloseButton(
+                              onClose: () => Navigator.of(context).pop()),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      color: surface,
+                      child: _buildMobileContent(categoryName, related,
+                          showHandle: true),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Builder(builder: (ctx) => _buildStickyBar(ctx)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Contenido del sheet mobile ────────────────────────────────────────────
+
+  Widget _buildMobileContent(
+      String? categoryName, List<ProductEntity> related,
+      {bool showHandle = false}) {
+    final divider = Divider(
+      height: 1,
+      indent: AppSpacing.base,
+      endIndent: AppSpacing.base,
+      color: textSecondary.withValues(alpha: 0.1),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Drag handle — solo en sheet, no en página completa
+        if (showHandle)
+          Center(
+            child: Container(
+              width: 32,
+              height: 3,
+              margin: const EdgeInsets.only(top: AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: textSecondary.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(AppRadius.full),
+              ),
+            ),
+          ),
+
+        // ── Nombre + chips ───────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.base, AppSpacing.md, AppSpacing.base, AppSpacing.base),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                product.name,
+                style: AppTextStyles.titleLarge.copyWith(
+                  color: textPrimary,
+                  fontSize: 22,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.xs + 2,
+                children: [
+                  if (categoryName != null)
+                    _InfoChip(
+                      icon: Icons.category_outlined,
+                      label: categoryName,
+                      color: primary,
+                    ),
+                  _InfoChip(
+                    icon: Icons.qr_code_outlined,
+                    label: 'SKU: ${product.sku}',
+                    color: textSecondary,
+                    outlined: true,
+                    outlinedBorderColor: textSecondary.withValues(alpha: 0.3),
+                  ),
+                  if (product.isActive)
+                    _InfoChip(
+                      icon: Icons.check_circle_outline,
+                      label: 'Disponible',
+                      color: config.theme.successColor,
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        divider,
+
+        // ── Precio ───────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.all(AppSpacing.base),
+          child: _buildPriceContent(),
+        ),
+
+        divider,
+
+        // ── Cantidad ─────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.all(AppSpacing.base),
+          child: _buildQuantityContent(),
+        ),
+
+        // ── Relacionados ─────────────────────────────────────────────
+        if (related.isNotEmpty) ...[
+          divider,
+          _buildRelatedContent(related, categoryName),
+        ],
+
+        const SizedBox(height: AppSpacing.xl),
+      ],
+    );
+  }
+
+  // ── AppBar transparente ───────────────────────────────────────────────────
 
   AppBar _buildAppBar() {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      foregroundColor: const Color(0xFF1A1A2E),
       leading: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: CircleAvatar(
-          backgroundColor: Colors.white.withValues(alpha: 0.92),
+          backgroundColor: Colors.black.withValues(alpha: 0.35),
           radius: 18,
           child: IconButton(
-          icon: Icon(Icons.arrow_back, size: 20, color: Color(0xFF1A1A2E)),
-          onPressed: () => context.pop(),
-        ),
+            icon: Icon(Icons.arrow_back_ios_new,
+                size: 16, color: Colors.white),
+            onPressed: () => context.pop(),
+            padding: EdgeInsets.zero,
+          ),
         ),
       ),
       actions: [
         Padding(
-          padding: const EdgeInsets.only(right: 8),
+          padding: const EdgeInsets.only(right: AppSpacing.sm),
           child: CircleAvatar(
-            backgroundColor: Colors.white.withValues(alpha: 0.92),
+            backgroundColor: Colors.black.withValues(alpha: 0.35),
             radius: 18,
-            child: const Icon(Icons.share_outlined, size: 20, color: Color(0xFF1A1A2E)),
+            child: const Icon(Icons.share_outlined,
+                size: 18, color: Colors.white),
           ),
         ),
       ],
@@ -409,346 +568,361 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
   // ── Imagen ────────────────────────────────────────────────────────────────
 
   Widget _buildImageSection() {
-    return Container(
-      height: 300,
-      color: const Color(0xFFF8F9FB),
-      padding: const EdgeInsets.fromLTRB(24, 80, 24, 24),
-      child: (product.imageUrl != null && product.imageUrl!.isNotEmpty)
-          ? CachedNetworkImage(
-              imageUrl: product.imageUrl!,
-              fit: BoxFit.contain,
-              placeholder: (_, _) => const Center(
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              errorWidget: (_, _, _) => _imagePlaceholder(),
-            )
-          : _imagePlaceholder(),
+    return Stack(
+      children: [
+        Container(
+          height: 300,
+          color: background,
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl, 80, AppSpacing.xl, AppSpacing.xl),
+          child: _buildImage(),
+        ),
+        if (product.discount > 0)
+          Positioned(
+            bottom: AppSpacing.base,
+            left: AppSpacing.base,
+            child: _DiscountBadge(discount: product.discount),
+          ),
+      ],
     );
+  }
+
+  // Sheet: sin padding top de AppBar, imagen centrada
+  Widget _buildSheetImageSection() {
+    return Stack(
+      children: [
+        Container(
+          height: 240,
+          width: double.infinity,
+          color: background,
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Center(child: _buildImage()),
+        ),
+        if (product.discount > 0)
+          Positioned(
+            bottom: AppSpacing.base,
+            left: AppSpacing.base,
+            child: _DiscountBadge(discount: product.discount),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildImage() {
+    if (product.imageUrl != null && product.imageUrl!.isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: product.imageUrl!,
+        fit: BoxFit.contain,
+        placeholder: (_, _) =>
+            ShimmerBox(height: double.infinity, radius: AppRadius.md),
+        errorWidget: (_, _, _) => _imagePlaceholder(),
+      );
+    }
+    return _imagePlaceholder();
   }
 
   Widget _imagePlaceholder() => Center(
         child: Icon(
           Icons.inventory_2_outlined,
           size: 80,
-          color: Colors.grey.shade300,
+          color: textSecondary.withValues(alpha: 0.35),
         ),
       );
 
-  // ── Info card ─────────────────────────────────────────────────────────────
+  // ── Price content (sin card wrapper) ────────────────────────────────────
 
-  Widget _buildInfoCard(String? categoryName) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
+  Widget _buildPriceContent() {
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Chips: categoría + SKU
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              if (categoryName != null)
-                _InfoChip(
-                  icon: Icons.category_outlined,
-                  label: categoryName,
-                  color: primary,
-                ),
-              _InfoChip(
-                icon: Icons.qr_code_outlined,
-                label: 'SKU: ${product.sku}',
-                color: Colors.grey.shade600,
-                outlined: true,
-              ),
-              if (product.isActive)
-                _InfoChip(
-                  icon: Icons.check_circle_outline,
-                  label: 'Disponible',
-                  color: const Color(0xFF2E7D32),
-                ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // Nombre del producto
           Text(
-            product.name,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1A2E),
-              height: 1.25,
+            'PRECIO',
+            style: AppTextStyles.labelSmall.copyWith(
+              color: textSecondary,
+              letterSpacing: 1.0,
             ),
           ),
-        ],
-      ),
-    );
-  }
+          const SizedBox(height: AppSpacing.md),
 
-  // ── Price card ────────────────────────────────────────────────────────────
-
-  Widget _buildPriceCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Precio',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF9E9E9E),
-              letterSpacing: 0.8,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Precio base
           _PriceRow(
             label: 'Precio base',
             value: CurrencyFormatter.format(product.basePrice, locale),
+            labelColor: textSecondary,
+            valueColor: textPrimary,
           ),
 
-          // IVA (si aplica)
           if (product.taxRate > 0) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.sm),
             _PriceRow(
               label: 'IVA ${(product.taxRate * 100).toStringAsFixed(0)}%',
               value: '+ ${CurrencyFormatter.format(product.taxAmount, locale)}',
-              valueColor: const Color(0xFFE65100),
+              labelColor: textSecondary,
+              valueColor: config.theme.warningColor,
             ),
           ],
 
-          // ICO — Impuesto al Consumo (licores)
           if (product.icoAmount > 0) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.sm),
             _PriceRow(
               label: 'Imp. Consumo (ICO)',
               value: '+ ${CurrencyFormatter.format(product.icoAmount, locale)}',
-              valueColor: const Color(0xFFE65100),
+              labelColor: textSecondary,
+              valueColor: config.theme.warningColor,
             ),
           ],
 
-          // Descuento de producto
           if (product.discount > 0) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.sm),
             _PriceRow(
-              label: 'Descuento ${(product.discount * 100).toStringAsFixed(0)}%',
-              value: '− ${CurrencyFormatter.format(product.discountAmount, locale)}',
-              valueColor: const Color(0xFF2E7D32),
+              label:
+                  'Descuento ${(product.discount * 100).toStringAsFixed(0)}%',
+              value:
+                  '− ${CurrencyFormatter.format(product.discountAmount, locale)}',
+              labelColor: textSecondary,
+              valueColor: config.theme.successColor,
             ),
           ],
 
-          const SizedBox(height: 12),
-          const Divider(height: 1),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
+          Divider(height: 1, color: textSecondary.withValues(alpha: 0.15)),
+          const SizedBox(height: AppSpacing.md),
 
-          // Precio final
+          // Precio final — elemento más prominente
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Precio final / unidad',
-                style: TextStyle(
-                  fontSize: 14,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: textPrimary,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A1A2E),
                 ),
               ),
               Text(
                 CurrencyFormatter.format(product.finalPrice, locale),
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: primary,
-                ),
+                style: AppTextStyles.priceDisplay.copyWith(color: primary),
               ),
             ],
           ),
         ],
-      ),
+      );
+  }
+
+  // ── Quantity content (sin card wrapper) ───────────────────────────────────
+
+  Widget _buildQuantityContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'CANTIDAD',
+          style: AppTextStyles.labelSmall.copyWith(
+            color: textSecondary,
+            letterSpacing: 1.0,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          children: [
+            _QuantityButton(
+              icon: Icons.remove,
+              onTap: _decrement,
+              enabled: _quantity > 1,
+              color: primary,
+            ),
+            Container(
+              width: 56,
+              height: 44,
+              alignment: Alignment.center,
+              child: Text(
+                '$_quantity',
+                style: AppTextStyles.titleMedium.copyWith(color: textPrimary),
+              ),
+            ),
+            _QuantityButton(
+              icon: Icons.add,
+              onTap: _increment,
+              enabled: true,
+              color: primary,
+            ),
+            const Spacer(),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '$_quantity × ${CurrencyFormatter.format(_unitPrice, locale)}',
+                  style: AppTextStyles.labelSmall.copyWith(color: textSecondary),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  CurrencyFormatter.format(_total, locale),
+                  style: AppTextStyles.priceMedium.copyWith(color: primary),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
     );
   }
 
-  // ── Quantity card ─────────────────────────────────────────────────────────
+  // ── Helper: envuelve contenido en card (usado en desktop) ─────────────────
 
-  Widget _buildQuantityCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+  Widget _desktopCard(Widget child) => Container(
+        decoration: BoxDecoration(
+          color: surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          boxShadow: AppShadows.level1,
+        ),
+        padding: const EdgeInsets.all(AppSpacing.base),
+        child: child,
+      );
+
+  Widget _buildInfoContent(String? categoryName) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(product.name,
+            style: AppTextStyles.titleLarge.copyWith(color: textPrimary)),
+        const SizedBox(height: AppSpacing.md),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.xs + 2,
+          children: [
+            if (categoryName != null)
+              _InfoChip(icon: Icons.category_outlined, label: categoryName, color: primary),
+            _InfoChip(
+              icon: Icons.qr_code_outlined,
+              label: 'SKU: ${product.sku}',
+              color: textSecondary,
+              outlined: true,
+              outlinedBorderColor: textSecondary.withValues(alpha: 0.3),
+            ),
+            if (product.isActive)
+              _InfoChip(
+                icon: Icons.check_circle_outline,
+                label: 'Disponible',
+                color: config.theme.successColor,
+              ),
+            if (product.discount > 0)
+              _InfoChip(
+                icon: Icons.local_offer_outlined,
+                label: '-${(product.discount * 100).round()}% descuento',
+                color: Colors.red.shade600,
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ── Related content (mobile — sin card wrapper) ──────────────────────────
+
+  Widget _buildRelatedContent(
+      List<ProductEntity> products, String? categoryName) {
+    final isRelated =
+        products.any((p) => p.categoryId == product.categoryId);
+    final title = isRelated && categoryName != null
+        ? 'Más de $categoryName'
+        : 'También te puede interesar';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.base, AppSpacing.base, AppSpacing.base, 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(title,
+                  style:
+                      AppTextStyles.titleSmall.copyWith(color: textPrimary)),
+              Text('${products.length} productos',
+                  style: AppTextStyles.labelSmall
+                      .copyWith(color: textSecondary)),
+            ],
           ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Cantidad',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF9E9E9E),
-              letterSpacing: 0.8,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        SizedBox(
+          height: 210,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: products.length,
+            separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+            itemBuilder: (_, i) => _RelatedProductCard(
+              product: products[i],
+              locale: locale,
+              primaryColor: primary,
+              backgroundColor: background,
+              textPrimaryColor: textPrimary,
+              textSecondaryColor: textSecondary,
             ),
           ),
-          const SizedBox(height: 14),
-
-          Row(
-            children: [
-              // Selector  -  número  +
-              _QuantityButton(
-                icon: Icons.remove,
-                onTap: _decrement,
-                enabled: _quantity > 1,
-                color: primary,
-              ),
-              Container(
-                width: 56,
-                height: 40,
-                alignment: Alignment.center,
-                child: Text(
-                  '$_quantity',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A2E),
-                  ),
-                ),
-              ),
-              _QuantityButton(
-                icon: Icons.add,
-                onTap: _increment,
-                enabled: true,
-                color: primary,
-              ),
-
-              const Spacer(),
-
-              // Subtotal
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '$_quantity × ${CurrencyFormatter.format(_unitPrice, locale)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    CurrencyFormatter.format(_total, locale),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: primary,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  // ── Related products ──────────────────────────────────────────────────────
+  // ── Related products (desktop — con card wrapper) ─────────────────────────
 
-  Widget _buildRelatedSection(List<ProductEntity> products, String? categoryName) {
-    final isRelated = products.any((p) => p.categoryId == product.categoryId);
+  Widget _buildRelatedSection(
+      List<ProductEntity> products, String? categoryName) {
+    final isRelated =
+        products.any((p) => p.categoryId == product.categoryId);
     final title = isRelated && categoryName != null
         ? 'Más de $categoryName'
         : 'También te puede interesar';
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.level1,
       ),
-      padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.base, AppSpacing.base, 0, AppSpacing.base),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: AppSpacing.base),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A2E),
-                    letterSpacing: 0.1,
-                  ),
+                  style: AppTextStyles.titleSmall.copyWith(
+                      color: textPrimary),
                 ),
                 Text(
                   '${products.length} productos',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: AppTextStyles.labelSmall.copyWith(
+                      color: textSecondary),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.md),
 
-          // Carousel horizontal
           SizedBox(
             height: 210,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: products.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
-              padding: const EdgeInsets.only(right: 16),
+              separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+              padding:
+                  const EdgeInsets.only(right: AppSpacing.base),
               itemBuilder: (_, i) => _RelatedProductCard(
                 product: products[i],
                 locale: locale,
                 primaryColor: primary,
+                backgroundColor: background,
+                textPrimaryColor: textPrimary,
+                textSecondaryColor: textSecondary,
               ),
             ),
           ),
@@ -762,46 +936,41 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
   Widget _buildStickyBar(BuildContext innerContext) {
     return Container(
       padding: EdgeInsets.fromLTRB(
-        16,
-        12,
-        16,
-        12 + MediaQuery.of(innerContext).padding.bottom,
+        AppSpacing.base,
+        AppSpacing.md,
+        AppSpacing.base,
+        AppSpacing.md + MediaQuery.of(innerContext).padding.bottom,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 20,
             offset: const Offset(0, -4),
           ),
         ],
       ),
       child: Row(
         children: [
-          // Total
           Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Total',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                style:
+                    AppTextStyles.labelSmall.copyWith(color: textSecondary),
               ),
               Text(
                 CurrencyFormatter.format(_total, locale),
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: primary,
-                ),
+                style: AppTextStyles.priceDisplay.copyWith(color: primary),
               ),
             ],
           ),
 
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.base),
 
-          // Botón agregar
           Expanded(
             child: SizedBox(
               height: 48,
@@ -810,19 +979,16 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
                 style: FilledButton.styleFrom(
                   backgroundColor: primary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                 ),
-                icon: const Icon(
-                  Icons.add_shopping_cart_outlined,
-                  color: Colors.white,
-                ),
-                label: const Text(
+                icon: const Icon(Icons.add_shopping_cart_outlined,
+                    color: Colors.white),
+                label: Text(
                   'Agregar al carrito',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
+                  style: AppTextStyles.labelLarge.copyWith(
                     color: Colors.white,
+                    fontSize: 15,
                   ),
                 ),
               ),
@@ -836,96 +1002,118 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
 
 // ── Related product card ──────────────────────────────────────────────────────
 
-class _RelatedProductCard extends StatelessWidget {
+class _RelatedProductCard extends StatefulWidget {
   const _RelatedProductCard({
     required this.product,
     required this.locale,
     required this.primaryColor,
+    required this.backgroundColor,
+    required this.textPrimaryColor,
+    required this.textSecondaryColor,
   });
 
   final ProductEntity product;
   final LocaleConfig locale;
   final Color primaryColor;
+  final Color backgroundColor;
+  final Color textPrimaryColor;
+  final Color textSecondaryColor;
+
+  @override
+  State<_RelatedProductCard> createState() => _RelatedProductCardState();
+}
+
+class _RelatedProductCardState extends State<_RelatedProductCard> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        // Reemplaza la ruta actual → navega al nuevo producto
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => ProductDetailPage(sku: product.sku),
-          ),
-        );
-      },
-      child: Container(
-        width: 140,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8F9FB),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade100),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Imagen
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: SizedBox(
-                height: 120,
-                width: double.infinity,
-                child: (product.imageUrl != null && product.imageUrl!.isNotEmpty)
-                    ? CachedNetworkImage(
-                        imageUrl: product.imageUrl!,
-                        fit: BoxFit.contain,
-                        placeholder: (_, _) => const Center(
-                          child: Icon(Icons.inventory_2_outlined,
-                              color: Color(0xFFCFD8DC), size: 36),
-                        ),
-                        errorWidget: (_, _, _) => const Center(
-                          child: Icon(Icons.inventory_2_outlined,
-                              color: Color(0xFFCFD8DC), size: 36),
-                        ),
-                      )
-                    : const Center(
-                        child: Icon(Icons.inventory_2_outlined,
-                            color: Color(0xFFCFD8DC), size: 36),
-                      ),
-              ),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: () => context.openProductDetail(widget.product.sku),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 140,
+          decoration: BoxDecoration(
+            color: widget.backgroundColor,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: _hovered
+                  ? widget.primaryColor.withValues(alpha: 0.3)
+                  : widget.textSecondaryColor.withValues(alpha: 0.12),
             ),
-
-            // Info
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF1A1A2E),
-                        height: 1.3,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const Spacer(),
-                    Text(
-                      CurrencyFormatter.format(product.basePrice, locale),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: primaryColor,
-                      ),
-                    ),
-                  ],
+            boxShadow: _hovered
+                ? AppShadows.level3(widget.primaryColor)
+                : AppShadows.none,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.md)),
+                child: SizedBox(
+                  height: 120,
+                  width: double.infinity,
+                  child: (widget.product.imageUrl != null &&
+                          widget.product.imageUrl!.isNotEmpty)
+                      ? CachedNetworkImage(
+                          imageUrl: widget.product.imageUrl!,
+                          fit: BoxFit.contain,
+                          placeholder: (_, _) => ShimmerBox(
+                              height: 120, radius: 0),
+                          errorWidget: (_, _, _) => Center(
+                            child: Icon(
+                              Icons.inventory_2_outlined,
+                              color: widget.textSecondaryColor
+                                  .withValues(alpha: 0.35),
+                              size: 36,
+                            ),
+                          ),
+                        )
+                      : Center(
+                          child: Icon(
+                            Icons.inventory_2_outlined,
+                            color: widget.textSecondaryColor
+                                .withValues(alpha: 0.35),
+                            size: 36,
+                          ),
+                        ),
                 ),
               ),
-            ),
-          ],
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.sm,
+                      AppSpacing.sm,
+                      AppSpacing.sm,
+                      AppSpacing.sm),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.product.name,
+                        style: AppTextStyles.productNameSmall.copyWith(
+                            color: widget.textPrimaryColor),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const Spacer(),
+                      Text(
+                        CurrencyFormatter.format(
+                            widget.product.basePrice, widget.locale),
+                        style: AppTextStyles.priceSmall.copyWith(
+                            color: widget.primaryColor),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -934,41 +1122,71 @@ class _RelatedProductCard extends StatelessWidget {
 
 // ── Widgets auxiliares ────────────────────────────────────────────────────────
 
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({
-    required this.icon,
-    required this.label,
-    required this.color,
-    this.outlined = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool outlined;
+class _DiscountBadge extends StatelessWidget {
+  const _DiscountBadge({required this.discount});
+  final double discount;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: outlined ? Colors.transparent : color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.red.shade600,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        boxShadow: AppShadows.level2,
+      ),
+      child: Text(
+        '-${(discount * 100).round()}%',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+    this.outlined = false,
+    this.outlinedBorderColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool outlined;
+  final Color? outlinedBorderColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm, vertical: AppSpacing.xs + 1),
+      decoration: BoxDecoration(
+        color: outlined ? Colors.transparent : color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppRadius.full),
         border: Border.all(
-          color: outlined ? Colors.grey.shade300 : color.withValues(alpha: 0.25),
+          color: outlined
+              ? (outlinedBorderColor ?? color.withValues(alpha: 0.3))
+              : color.withValues(alpha: 0.25),
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 13, color: color),
-          const SizedBox(width: 5),
+          const SizedBox(width: AppSpacing.xs),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: color,
               fontWeight: FontWeight.w600,
-              color: outlined ? Colors.grey.shade700 : color,
             ),
           ),
         ],
@@ -981,12 +1199,14 @@ class _PriceRow extends StatelessWidget {
   const _PriceRow({
     required this.label,
     required this.value,
-    this.valueColor,
+    required this.labelColor,
+    required this.valueColor,
   });
 
   final String label;
   final String value;
-  final Color? valueColor;
+  final Color labelColor;
+  final Color valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -995,15 +1215,12 @@ class _PriceRow extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF666666)),
+          style: AppTextStyles.bodyMedium.copyWith(color: labelColor),
         ),
         Text(
           value,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: valueColor ?? const Color(0xFF1A1A2E),
-          ),
+          style:
+              AppTextStyles.priceSmall.copyWith(color: valueColor),
         ),
       ],
     );
@@ -1025,17 +1242,22 @@ class _QuantityButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        width: 40,
-        height: 40,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
-          color: enabled ? color.withValues(alpha: 0.1) : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(10),
+          color: enabled
+              ? color.withValues(alpha: 0.10)
+              : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(
-            color: enabled ? color.withValues(alpha: 0.3) : Colors.grey.shade200,
+            color: enabled
+                ? color.withValues(alpha: 0.30)
+                : Colors.grey.shade200,
           ),
         ),
         child: Icon(
@@ -1050,15 +1272,17 @@ class _QuantityButton extends StatelessWidget {
 
 // ── Skeleton de carga ─────────────────────────────────────────────────────────
 
-class _ProductDetailSkeleton extends StatelessWidget {
-  const _ProductDetailSkeleton({required this.primaryColor});
-
-  final Color primaryColor;
+class _ProductDetailSkeleton extends ConsumerWidget {
+  const _ProductDetailSkeleton();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(themeProvider);
+    final bg = theme.theme.backgroundColor;
+    final surface = theme.theme.surfaceColor;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: bg,
       appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
       body: SingleChildScrollView(
         physics: const NeverScrollableScrollPhysics(),
@@ -1068,72 +1292,72 @@ class _ProductDetailSkeleton extends StatelessWidget {
             // Image area
             Container(
               height: 300,
-              color: const Color(0xFFF8F9FB),
-              padding: const EdgeInsets.fromLTRB(48, 80, 48, 32),
-              child: const ShimmerBox(height: double.infinity, radius: 12),
+              color: bg,
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.xxl, 80, AppSpacing.xxl, AppSpacing.xxl),
+              child: const ShimmerBox(
+                  height: double.infinity, radius: AppRadius.md),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
 
-            // Info card skeleton
             _skeletonCard(
-              padding: const EdgeInsets.all(16),
+              surface: surface,
+              padding: const EdgeInsets.all(AppSpacing.base),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: const [
-                      ShimmerBox(height: 26, width: 90, radius: 13),
-                      SizedBox(width: 8),
-                      ShimmerBox(height: 26, width: 110, radius: 13),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  const ShimmerBox(height: 22, width: double.infinity),
-                  const SizedBox(height: 8),
-                  const ShimmerBox(height: 22, width: 200),
+                children: const [
+                  Row(children: [
+                    ShimmerBox(height: 26, width: 90, radius: AppRadius.full),
+                    SizedBox(width: AppSpacing.sm),
+                    ShimmerBox(height: 26, width: 110, radius: AppRadius.full),
+                  ]),
+                  SizedBox(height: AppSpacing.md),
+                  ShimmerBox(height: 22, width: double.infinity),
+                  SizedBox(height: AppSpacing.sm),
+                  ShimmerBox(height: 22, width: 200),
                 ],
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.sm),
 
-            // Price card skeleton
             _skeletonCard(
-              padding: const EdgeInsets.all(16),
+              surface: surface,
+              padding: const EdgeInsets.all(AppSpacing.base),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
-                  ShimmerBox(height: 14, width: 60),
-                  SizedBox(height: 14),
+                  ShimmerBox(height: 12, width: 60),
+                  SizedBox(height: AppSpacing.md),
                   _SkeletonPriceRow(),
-                  SizedBox(height: 10),
+                  SizedBox(height: AppSpacing.sm),
                   _SkeletonPriceRow(),
-                  SizedBox(height: 14),
+                  SizedBox(height: AppSpacing.md),
                   Divider(height: 1),
-                  SizedBox(height: 14),
+                  SizedBox(height: AppSpacing.md),
                   _SkeletonPriceRow(valueWidth: 100),
                 ],
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.sm),
 
-            // Quantity card skeleton
             _skeletonCard(
-              padding: const EdgeInsets.all(16),
+              surface: surface,
+              padding: const EdgeInsets.all(AppSpacing.base),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const ShimmerBox(height: 14, width: 70),
-                  const SizedBox(height: 14),
+                  const ShimmerBox(height: 12, width: 70),
+                  const SizedBox(height: AppSpacing.md),
                   Row(
                     children: const [
-                      ShimmerBox(height: 40, width: 40, radius: 10),
-                      SizedBox(width: 16),
+                      ShimmerBox(height: 44, width: 44, radius: AppRadius.sm),
+                      SizedBox(width: AppSpacing.base),
                       ShimmerBox(height: 24, width: 40),
-                      SizedBox(width: 16),
-                      ShimmerBox(height: 40, width: 40, radius: 10),
+                      SizedBox(width: AppSpacing.base),
+                      ShimmerBox(height: 44, width: 44, radius: AppRadius.sm),
                       Spacer(),
                       ShimmerBox(height: 36, width: 90),
                     ],
@@ -1142,17 +1366,19 @@ class _ProductDetailSkeleton extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.sm),
 
-            // Related products skeleton
             _skeletonCard(
-              padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+              surface: surface,
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.base, AppSpacing.base, 0, AppSpacing.base),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.only(right: 16),
-                    child: Row(
+                  Padding(
+                    padding:
+                        const EdgeInsets.only(right: AppSpacing.base),
+                    child: const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         ShimmerBox(height: 14, width: 160),
@@ -1160,24 +1386,29 @@ class _ProductDetailSkeleton extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: AppSpacing.md),
                   SizedBox(
                     height: 210,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: 4,
-                      separatorBuilder: (_, _) => const SizedBox(width: 10),
-                      padding: const EdgeInsets.only(right: 16),
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(width: AppSpacing.sm),
+                      padding:
+                          const EdgeInsets.only(right: AppSpacing.base),
                       itemBuilder: (_, _) => const Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          ShimmerBox(height: 120, width: 140, radius: 12),
-                          SizedBox(height: 8),
+                          ShimmerBox(
+                              height: 120,
+                              width: 140,
+                              radius: AppRadius.md),
+                          SizedBox(height: AppSpacing.sm),
                           ShimmerBox(height: 11, width: 120),
-                          SizedBox(height: 4),
+                          SizedBox(height: AppSpacing.xs),
                           ShimmerBox(height: 11, width: 90),
-                          SizedBox(height: 8),
+                          SizedBox(height: AppSpacing.sm),
                           ShimmerBox(height: 14, width: 70),
                         ],
                       ),
@@ -1190,25 +1421,30 @@ class _ProductDetailSkeleton extends StatelessWidget {
         ),
       ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        color: Colors.white,
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.base, AppSpacing.md, AppSpacing.base, AppSpacing.xl),
+        color: surface,
         child: Row(
           children: const [
             ShimmerBox(height: 44, width: 90),
-            SizedBox(width: 16),
-            Expanded(child: ShimmerBox(height: 48, radius: 12)),
+            SizedBox(width: AppSpacing.base),
+            Expanded(child: ShimmerBox(height: 48, radius: AppRadius.md)),
           ],
         ),
       ),
     );
   }
 
-  Widget _skeletonCard({required Widget child, required EdgeInsets padding}) {
+  static Widget _skeletonCard({
+    required Color surface,
+    required Widget child,
+    required EdgeInsets padding,
+  }) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       padding: padding,
       child: child,
@@ -1229,6 +1465,255 @@ class _SkeletonPriceRow extends StatelessWidget {
         const ShimmerBox(height: 14, width: 120),
         ShimmerBox(height: 14, width: valueWidth),
       ],
+    );
+  }
+}
+
+// ── Toast animado "agregado al carrito" ───────────────────────────────────────
+// Mobile: slide-up desde abajo, ancho completo con padding.
+// Desktop: slide-up en esquina inferior derecha, ancho fijo 360px.
+
+class _CartToast extends StatefulWidget {
+  const _CartToast({
+    required this.message,
+    required this.primaryColor,
+    required this.successColor,
+    required this.surfaceColor,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.isDesktop,
+    required this.bottomPad,
+    required this.onViewCart,
+    required this.onDismiss,
+  });
+
+  final String message;
+  final Color primaryColor;
+  final Color successColor;
+  final Color surfaceColor;
+  final Color textPrimary;
+  final Color textSecondary;
+  final bool isDesktop;
+  final double bottomPad;
+  final VoidCallback onViewCart;
+  final VoidCallback onDismiss;
+
+  @override
+  State<_CartToast> createState() => _CartToastState();
+}
+
+class _CartToastState extends State<_CartToast>
+    with TickerProviderStateMixin {
+  late AnimationController _controller;
+  late AnimationController _progressController;
+  late Animation<double> _fade;
+  late Animation<double> _progress;
+
+  static const _duration = Duration(seconds: 4);
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _progressController = AnimationController(
+      vsync: this,
+      duration: _duration,
+    );
+
+    _fade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _progress = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _progressController, curve: Curves.linear),
+    );
+
+    _controller.forward();
+    _progressController.forward();
+
+    Future.delayed(_duration, () {
+      if (mounted) _dismiss();
+    });
+  }
+
+  void _dismiss() {
+    _controller.reverse().then((_) {
+      if (mounted) widget.onDismiss();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _progressController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomOffset = widget.bottomPad + (widget.isDesktop ? 24.0 : 80.0);
+
+    return Positioned(
+      bottom: bottomOffset,
+      left: widget.isDesktop ? null : AppSpacing.md,
+      right: AppSpacing.md,
+      width: widget.isDesktop ? 360 : null,
+      child: FadeTransition(
+        opacity: _fade,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.4),
+            end: Offset.zero,
+          ).animate(
+            CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              decoration: BoxDecoration(
+                color: widget.surfaceColor,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                boxShadow: AppShadows.level4,
+                border: Border.all(
+                  color: widget.successColor.withValues(alpha: 0.20),
+                ),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // ── Contenido principal ─────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.md, AppSpacing.md,
+                        AppSpacing.sm, AppSpacing.md),
+                    child: Row(
+                      children: [
+                        // Ícono carrito en círculo success
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: widget.successColor.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.check_circle_outline_rounded,
+                            color: widget.successColor,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+
+                        // Texto
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Agregado al carrito',
+                                style: AppTextStyles.labelMedium.copyWith(
+                                  color: widget.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                widget.message,
+                                style: AppTextStyles.labelSmall.copyWith(
+                                  color: widget.textSecondary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Botón "Ver carrito"
+                        TextButton(
+                          onPressed: widget.onViewCart,
+                          style: TextButton.styleFrom(
+                            foregroundColor: widget.primaryColor,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.sm,
+                                vertical: AppSpacing.xs),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            'Ver',
+                            style: AppTextStyles.labelMedium.copyWith(
+                              color: widget.primaryColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+
+                        // Botón cerrar
+                        GestureDetector(
+                          onTap: _dismiss,
+                          behavior: HitTestBehavior.opaque,
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSpacing.xs),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 16,
+                              color: widget.textSecondary
+                                  .withValues(alpha: 0.5),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // ── Barra de progreso de auto-dismiss ───────────────
+                  AnimatedBuilder(
+                    animation: _progress,
+                    builder: (_, _) => LinearProgressIndicator(
+                      value: _progress.value,
+                      minHeight: 3,
+                      backgroundColor:
+                          widget.successColor.withValues(alpha: 0.10),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        widget.successColor.withValues(alpha: 0.60),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Botón cerrar sheet ────────────────────────────────────────────────────────
+
+class _CloseButton extends StatelessWidget {
+  const _CloseButton({required this.onClose});
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onClose,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 44,
+        height: 44,
+        margin: const EdgeInsets.all(AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.35),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.close_rounded, size: 18, color: Colors.white),
+      ),
     );
   }
 }

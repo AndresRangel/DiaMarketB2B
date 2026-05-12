@@ -22,6 +22,30 @@ import 'app_routes.dart';
 
 part 'app_router.g.dart';
 
+// ── Transición global: fade + slide vertical sutil ───────────────────────────
+
+CustomTransitionPage<void> _page(LocalKey key, Widget child) {
+  return CustomTransitionPage<void>(
+    key: key,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 220),
+    reverseTransitionDuration: const Duration(milliseconds: 180),
+    transitionsBuilder: (_, animation, _, child) {
+      return FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.03),
+            end: Offset.zero,
+          ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
 // ── Notifier para disparar refresh del router ─────────────────────────────────
 
 /// GoRouter necesita un Listenable para saber cuándo re-evaluar las
@@ -69,56 +93,60 @@ GoRouter appRouter(Ref ref) {
       // ── Auth (fuera del shell — sin bottom nav) ───────────────────────
       GoRoute(
         path: AppRoutes.splash,
-        builder: (_, _) => const SplashPage(),
+        pageBuilder: (_, state) => _page(state.pageKey, const SplashPage()),
       ),
       GoRoute(
         path: AppRoutes.login,
-        builder: (_, _) => const LoginPage(),
+        pageBuilder: (_, state) => _page(state.pageKey, const LoginPage()),
       ),
       GoRoute(
         path: AppRoutes.otp,
-        builder: (_, state) {
+        pageBuilder: (_, state) {
           final flowParam = state.uri.queryParameters['flow'];
           final flow = flowParam == 'registration'
               ? OtpFlow.registration
               : OtpFlow.recoverPassword;
           final phone = state.uri.queryParameters['phone'];
-          return OtpPage(flow: flow, prefilledPhone: phone);
+          return _page(state.pageKey, OtpPage(flow: flow, prefilledPhone: phone));
         },
       ),
       GoRoute(
         path: AppRoutes.register,
-        builder: (_, _) => const RegisterPage(),
+        pageBuilder: (_, state) => _page(state.pageKey, const RegisterPage()),
       ),
       GoRoute(
         path: AppRoutes.pendingApproval,
-        builder: (_, _) => const PendingApprovalPage(),
+        pageBuilder: (_, state) =>
+            _page(state.pageKey, const PendingApprovalPage()),
       ),
 
       // ── Búsqueda (fuera del shell — pantalla completa) ───────────────
       GoRoute(
         path: AppRoutes.search,
-        builder: (_, _) => const SearchPage(),
+        pageBuilder: (_, state) => _page(state.pageKey, const SearchPage()),
       ),
 
       // ── Lista de productos por categoría ─────────────────────────────
       GoRoute(
         path: AppRoutes.productList,
-        builder: (_, state) {
+        pageBuilder: (_, state) {
           final categoryId = state.uri.queryParameters['categoryId'];
           final name = state.uri.queryParameters['name'] != null
               ? Uri.decodeComponent(state.uri.queryParameters['name']!)
               : null;
-          return ProductListPage(categoryId: categoryId, categoryName: name);
+          return _page(
+            state.pageKey,
+            ProductListPage(categoryId: categoryId, categoryName: name),
+          );
         },
       ),
 
       // ── Detalle de producto (fuera del shell — pantalla completa) ─────
       GoRoute(
         path: AppRoutes.productDetail,
-        builder: (_, state) {
+        pageBuilder: (_, state) {
           final sku = state.pathParameters['id']!;
-          return ProductDetailPage(sku: sku);
+          return _page(state.pageKey, ProductDetailPage(sku: sku));
         },
       ),
 
@@ -131,7 +159,8 @@ GoRouter appRouter(Ref ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.home,
-                builder: (_, _) => const HomePage(),
+                pageBuilder: (_, state) =>
+                    _page(state.pageKey, const HomePage()),
               ),
             ],
           ),
@@ -141,7 +170,8 @@ GoRouter appRouter(Ref ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.promotions,
-                builder: (_, _) => const PromotionsPage(),
+                pageBuilder: (_, state) =>
+                    _page(state.pageKey, const PromotionsPage()),
               ),
             ],
           ),
@@ -151,7 +181,8 @@ GoRouter appRouter(Ref ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.cart,
-                builder: (_, _) => const CartPage(),
+                pageBuilder: (_, state) =>
+                    _page(state.pageKey, const CartPage()),
               ),
             ],
           ),
@@ -161,7 +192,8 @@ GoRouter appRouter(Ref ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.profile,
-                builder: (_, _) => const ProfilePage(),
+                pageBuilder: (_, state) =>
+                    _page(state.pageKey, const ProfilePage()),
               ),
             ],
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/shell/shell_key.dart';
 import '../../../../features/auth/presentation/notifiers/auth_notifier.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -12,6 +13,10 @@ class ProfilePage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Perfil'),
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.menu_rounded, size: 22),
+          onPressed: () => mainScaffoldKey.currentState?.openDrawer(),
+        ),
       ),
       body: Center(
         child: Column(

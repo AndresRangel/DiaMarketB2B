@@ -66,11 +66,11 @@ class MainShell extends ConsumerWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: shell.currentIndex,
         onDestinationSelected: _onDestinationSelected,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 8,
         shadowColor: Colors.black12,
         indicatorColor: primaryColor.withValues(alpha: 0.12),
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         destinations: [
           NavigationDestination(
             icon: const Icon(Icons.home_outlined),

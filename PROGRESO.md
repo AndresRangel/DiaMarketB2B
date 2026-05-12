@@ -183,6 +183,160 @@
 
 ---
 
+## ✅ SPRINT UI/UX — Design System + Polish visual (2026-05)
+
+> Sprint transversal entre Fases 2 y 3. Dos sesiones: primera pasó tokens y estructura,
+> segunda (2026-05-08) hizo el polish visual profundo comparando con Rappi/Cornershop.
+
+### Qué se hizo — Sesión 1
+
+| Área | Archivos |
+|------|----------|
+| Auditoría UI/UX completa (ui-ux-pro-max + impeccable) | `PRODUCT.md`, `DESIGN.md`, `design-system/MASTER.md`, `design-system/pages/*.md` |
+| Tokens de diseño | `lib/shared/constants/app_spacing.dart`, `app_radius.dart`, `app_shadows.dart`, `app_text_styles.dart` |
+| ShimmerBox → colores themed | `lib/shared/widgets/shimmer_box.dart` |
+| ProductCard: touch targets, tokens, InkWell | `product_card.dart` |
+| HomePage: tokens, secciones diferenciadas, grid desktop | `home_page.dart` |
+| BannerCarousel: 300ms, altura responsive, gradiente | `banner_carousel.dart` |
+| MainShell: labelBehavior, surfaceColor | `main_shell.dart` |
+| ProductDetailPage: tokens, QuantityButton 44px, RelatedCard | `product_detail_page.dart` |
+
+### Qué se hizo — Sesión 2 (2026-05-08)
+
+| Área | Archivos |
+|------|----------|
+| `google_fonts: ^6.2.1` añadido — fuente dinámica desde backend | `pubspec.yaml`, `app_config_model.dart` |
+| `ProductCard` → `ConsumerStatefulWidget` con hover, sin Card+DecoratedBox, `showAddButton` param | `product_card.dart` |
+| `FeaturedProductCard` → hover, `showAddButton`, imagen `surfaceColor` | `product_card.dart` |
+| `HomePage` categorías → pills compactos (36px) con hover animado | `home_page.dart` |
+| `HomePage` "Más comprados" → `_RankedProductList` (layout completamente diferente a Destacados) | `home_page.dart` |
+| Ranked list mobile → lista vertical de 6 items (no carrusel) | `home_page.dart` |
+| Destacados + Ofertas → `showAddButton: false`, `childAspectRatio: 0.80` sin botón | `home_page.dart` |
+| `ProductDetailPage` mobile → sheet único que sube sobre imagen (sin cards apiladas) | `product_detail_page.dart` |
+| ProductDetail: nombre primero (héroe), chips después; secciones con dividers no cards | `product_detail_page.dart` |
+| `CartPage` → tokens completos, hover en items, `_QtySelector` con botones cuadrados | `cart_page.dart` |
+
+### Decisiones de diseño tomadas
+
+- **Estrategia de color:** Restrained — un primaryColor lleva acciones, neutrales para estructura
+- **Touch targets:** mínimo 44px en TODO elemento interactivo (WCAG 2.5.5)
+- **Shimmer:** colores derivados de `themeProvider`
+- **Desktop home:** grid 3-5 cols, no scroll horizontal
+- **Secciones diferenciadas:** Destacados = grid cards, Más Comprados = lista ranked con número de posición
+- **ProductDetail mobile:** patrón "sheet sobre imagen" (imagen gris + sheet blanco con rounded top + sombra hacia arriba). Sin margin negativo — contraste de colores crea la ilusión.
+- **Fuente:** `google_fonts` instalado, `toMaterialTheme()` usa `GoogleFonts.getTextTheme()`. Actualmente backend devuelve `"Roboto"` — pedir al back cambiar a `"Inter"` en `get_config`.
+- **CartPage:** sin hardcoded colors, todos los tokens del tema
+
+---
+
+## ⬜ PENDIENTE — Sprint UI/UX (siguiente sesión)
+
+### ✅ Completado en esta sesión
+
+| Tarea | Archivos |
+|-------|----------|
+| `ProductListPage` desktop: sidebar fijo 240px, hover+indicador borde, 3-4 cols junto sidebar | `product_list_page.dart` |
+| `ProductListPage` tokens: todos los hardcoded colors → tema, AppTextStyles, AppSpacing | `product_list_page.dart` |
+| `AnimatedCard` compartido: fade+slide up 280ms easeOutCubic, delay 40ms×índice máx 320ms | `lib/shared/widgets/animated_card.dart` |
+| Animaciones en grids de `HomePage` (Destacados, Ofertas) | `home_page.dart` |
+| Animaciones en grid de `ProductListPage` | `product_list_page.dart` |
+
+### P1 — Pendiente
+
+| Tarea | Impacto | Archivo |
+|-------|---------|---------|
+| Pedir al backend cambiar `fontFamily` de `"Roboto"` a `"Inter"` en `get_config` | ★★★★★ | Backend Supabase |
+
+### ✅ Completado en Sesión 3 (2026-05-11/12) — Sprint UI/UX avanzado
+
+| Área | Archivos |
+|------|----------|
+| Navegación contextual: `openProductDetail()` → sheet en móvil, push en desktop | `lib/shared/utils/nav.dart` (NUEVO) |
+| `ProductDetailPage`: `isSheet` param, `_buildSheetLayout`, handle externo, `ClampingScrollPhysics` | `product_detail_page.dart` |
+| `_buildSheetImageSection`: 240px, centrada, sin padding de AppBar | `product_detail_page.dart` |
+| `_CloseButton`: botón X circular sobre imagen en sheet | `product_detail_page.dart` |
+| Drag-to-dismiss: `GestureDetector(onVerticalDragEnd)` fuera de scroll con velocity > 200 | `product_detail_page.dart` |
+| `AppDrawer`: botón cerrar X en header, todos los colores → tokens | `app_drawer.dart` |
+| `SearchPage`: reescritura completa — recientes, términos populares, productos populares | `search_page.dart` |
+| `RecentSearches` notifier: guarda hasta 6 búsquedas de sesión | `search_notifier.dart` |
+| `SearchNotifier.search()`: auto-guarda en recientes antes del debounce | `search_notifier.dart` |
+| Todos los product cards navegan via `context.openProductDetail()` | `product_card.dart`, `home_page.dart`, `search_page.dart` |
+
+### P2 — Calidad y consistencia ✅ Completado en Sprint 2026-05-12
+
+| Tarea | Estado |
+|-------|--------|
+| Auth pages: tokens AppSpacing/AppRadius/AppTextStyles | ✅ |
+| `AppButton`: altura 52px + FilledButton + tokens | ✅ |
+| `AppTextField`: bordes temáticos | ✅ |
+| `AppErrorWidget`: rediseño completo | ✅ |
+| `PendingApprovalPage`: branded con themeProvider | ✅ |
+| `SplashPage`: neutral + branded animados | ✅ |
+
+---
+
+## ✅ SPRINT UI/UX — Polish visual profundo (2026-05-12)
+
+> Sprint completo de polish visual. Todas las pantallas existentes revisadas mobile + web.
+> Cero pendientes visuales hasta que lleguen nuevas fases funcionales.
+
+### Pantallas auth
+
+| Archivo | Cambios |
+|---------|---------|
+| `login_page.dart` | Reescritura total. Mobile: gradiente primario arriba + card blanca. Desktop: dos columnas (panel marca + formulario). Company selector con tiles animados. |
+| `register_page.dart` | Mismo patrón visual que Login. Dropdown temático (mismos bordes que AppTextField). Botón atrás en card desktop. |
+| `otp_page.dart` | Panel izquierdo de marca en desktop (igual que Login/Register). OTP boxes 48×56px con borde primario animado al enfocar/completar. Countdown como pill con icono timer. |
+| `splash_page.dart` | Neutral: gradiente slate oscuro (#1A2535→#243447) + fade-in + `_LoadingDots` animados. Branded: gradiente primario + círculos decorativos + fade-in del logo + dots. |
+| `pending_approval_page.dart` | `ConsumerWidget` con themeProvider. `_PulsingIcon` con anillo animado. Card elevado en desktop. Info bullets temáticos. `AppButton` con icono. |
+
+### Pantallas catálogo
+
+| Archivo | Cambios |
+|---------|---------|
+| `home_page.dart` | Categorías: pills → `_CategoryGrid` (carousel mobile, grid 2 filas desktop). Tiles con icono temático + label, hover, imagen si disponible. |
+| `product_detail_page.dart` | Badge descuento sobre imagen. Handle drag solo en sheet. Label "CANTIDAD". Nombre primero en desktop. Chip descuento en info card. Close button 36→44px. |
+| `product_list_page.dart` | Badge carrito: `accentColor` → `Colors.red.shade600`. |
+| `search_page.dart` | (sin cambios en esta sesión — ya rediseñada) |
+
+### Carrito
+
+| Archivo | Cambios |
+|---------|---------|
+| `cart_page.dart` | Reescritura total. Swipe-to-delete mobile (`Dismissible`). Descuento visible en items (tachado + ahorro). SKU. Imagen 80/96px. Touch target `_QtyBtn` 36→44px. Empty state con CTA. Summary bar expandible con `AnimatedSize`. Chip ahorro total. |
+
+### Toast "Agregado al carrito"
+
+| Archivo | Cambios |
+|---------|---------|
+| `product_detail_page.dart` | Reemplazado overlay oscuro plano por `_CartToast`: slide-up + fade animados, card blanca, ícono check success, barra de progreso auto-dismiss 4s, botón X cerrar. Desktop: esquina inferior derecha 360px. "Ver carrito" cierra sheet antes de navegar. |
+
+### Shared widgets
+
+| Archivo | Cambios |
+|---------|---------|
+| `app_button.dart` | `ElevatedButton` → `FilledButton`. Altura 52px. `AppRadius.md`. `AppTextStyles.labelLarge`. Parámetro `icon` opcional. `AppOutlinedButton` misma altura/radio. |
+| `app_text_field.dart` | Bordes temáticos (gris en reposo, primario al enfocar). `filled: true`. `floatingLabelStyle` en primario. Padding moderno. |
+| `app_error_widget.dart` | Ícono en círculo error. Título + mensaje separados. `AppButton` con refresh icon. Tokens completos. |
+| `shimmer_box.dart` | Sin cambios — ya usaba colores temáticos correctamente ✅ |
+
+### Skeleton home
+
+| Archivo | Cambios |
+|---------|---------|
+| `home_skeleton.dart` | Reescritura total. Categorías → `_CategoryTilesSkeleton` (carousel mobile / grid desktop). Productos → grid adaptativo en desktop. Ranked list → grid desktop / lista mobile. Todos los componentes con sombras y radios que coinciden con widgets reales. |
+
+### Decisiones visuales
+
+- **AppButton**: `FilledButton` Material 3 > `ElevatedButton` — mejor hover/press nativo en web
+- **OTP boxes**: animación en el propio widget (`_OtpBoxState`) con `focusNode.addListener` — sin estado externo
+- **Splash neutral**: gradiente oscuro neutral (no blanco) — se ve como carga premium, no pantalla de error
+- **Cart swipe**: `Dismissible(direction: endToStart)` sin confirmación — acción obvia y reversible desde catálogo
+- **Toast**: `TickerProviderStateMixin` para dos `AnimationController` independientes (entrada + progreso)
+- **Categorías mobile**: carousel siempre (no grid) — menos scroll vertical, descubrimiento más natural
+
+---
+
 ## 🔄 FASE 3 — Carrito + Checkout (En progreso)
 
 ### Servicios backend involucrados

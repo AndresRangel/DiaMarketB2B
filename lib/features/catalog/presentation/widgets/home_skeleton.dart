@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/constants/app_radius.dart';
+import '../../../../shared/constants/app_spacing.dart';
 import '../../../../shared/widgets/shimmer_box.dart';
 
 class HomeSkeleton extends StatelessWidget {
@@ -7,136 +9,268 @@ class HomeSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final isDesktop = width >= 900;
+
     return SingleChildScrollView(
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 12),
-          _buildBannerSkeleton(),
-          _buildCategoriesSkeleton(),
-          _buildFeaturedSkeleton(),
-          const SizedBox(height: 8),
-          _buildGridSkeleton(),
+          const SizedBox(height: AppSpacing.sm),
+          _BannerSkeleton(isDesktop: isDesktop),
+          _SectionHeaderSkeleton(),
+          _CategoryTilesSkeleton(isDesktop: isDesktop, width: width),
+          _SectionHeaderSkeleton(withAction: true),
+          _ProductCarouselSkeleton(isDesktop: isDesktop, width: width),
+          const SizedBox(height: AppSpacing.sm),
+          _SectionHeaderSkeleton(withAction: true),
+          _RankedListSkeleton(isDesktop: isDesktop, width: width),
         ],
       ),
     );
   }
+}
 
-  Widget _buildBannerSkeleton() {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(12, 0, 12, 16),
+// ── Banner ────────────────────────────────────────────────────────────────────
+
+class _BannerSkeleton extends StatelessWidget {
+  const _BannerSkeleton({required this.isDesktop});
+  final bool isDesktop;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
       child: Column(
         children: [
-          ShimmerBox(height: 170, radius: 14),
-          SizedBox(height: 10),
+          ShimmerBox(
+            height: isDesktop ? 220 : 170,
+            radius: AppRadius.lg,
+          ),
+          const SizedBox(height: 10),
+          // Indicadores de punto
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              ShimmerBox(height: 6, width: 20, radius: 3),
-              SizedBox(width: 6),
-              ShimmerBox(height: 6, width: 6, radius: 3),
-              SizedBox(width: 6),
-              ShimmerBox(height: 6, width: 6, radius: 3),
+              const ShimmerBox(height: 6, width: 18, radius: 3),
+              const SizedBox(width: 5),
+              const ShimmerBox(height: 6, width: 6, radius: 3),
+              const SizedBox(width: 5),
+              const ShimmerBox(height: 6, width: 6, radius: 3),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoriesSkeleton() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 14, 0, 14),
-      child: SizedBox(
-        height: 40,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: 7,
-          separatorBuilder: (_, _) => const SizedBox(width: 8),
-          itemBuilder: (_, i) => ShimmerBox(
-            height: 40,
-            width: i == 0 ? 70.0 : (i % 3 == 0 ? 95.0 : 82.0),
-            radius: 20,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeaturedSkeleton() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 4, 16, 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              ShimmerBox(height: 18, width: 110),
-              ShimmerBox(height: 14, width: 60),
-            ],
-          ),
-        ),
-        SizedBox(
-          height: 210,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 4,
-            separatorBuilder: (_, _) => const SizedBox(width: 10),
-            itemBuilder: (_, _) => const SizedBox(
-              width: 152,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ShimmerBox(height: 124, width: 152, radius: 14),
-                  SizedBox(height: 8),
-                  ShimmerBox(height: 11, width: 130),
-                  SizedBox(height: 4),
-                  ShimmerBox(height: 11, width: 90),
-                  SizedBox(height: 6),
-                  ShimmerBox(height: 14, width: 80),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildGridSkeleton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(bottom: 10),
-            child: ShimmerBox(height: 18, width: 140),
-          ),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 6,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: 0.68,
-            ),
-            itemBuilder: (_, _) => const _ProductCardSkeleton(),
           ),
         ],
       ),
     );
   }
 }
+
+// ── Section header ────────────────────────────────────────────────────────────
+
+class _SectionHeaderSkeleton extends StatelessWidget {
+  const _SectionHeaderSkeleton({this.withAction = false});
+  final bool withAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.base, AppSpacing.base, AppSpacing.base, 0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const ShimmerBox(height: 18, width: 120),
+          if (withAction) const ShimmerBox(height: 14, width: 60),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Category tiles carousel ───────────────────────────────────────────────────
+// Coincide con el nuevo diseño de _HorizontalCarousel en home_page.dart.
+
+class _CategoryTilesSkeleton extends StatelessWidget {
+  const _CategoryTilesSkeleton(
+      {required this.isDesktop, required this.width});
+  final bool isDesktop;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    // Desktop: si caben en 2 filas → grid, si no → carrusel
+    final cols = isDesktop
+        ? (width >= 1400 ? 8 : (width >= 1100 ? 7 : 6))
+        : 4;
+    final tileCount = isDesktop ? (cols * 2) : 6;
+    final tileWidth = isDesktop ? 88.0 : 76.0;
+    final tileHeight = isDesktop ? 104.0 : 96.0;
+
+    if (isDesktop) {
+      // Grid estático
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.base, AppSpacing.md, AppSpacing.base, AppSpacing.xs),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: tileCount,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
+            crossAxisSpacing: AppSpacing.sm,
+            mainAxisSpacing: AppSpacing.sm,
+            childAspectRatio: 0.85,
+          ),
+          itemBuilder: (_, _) => _CategoryTileSkeleton(),
+        ),
+      );
+    }
+
+    // Mobile: carrusel horizontal
+    return SizedBox(
+      height: tileHeight,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.base, AppSpacing.sm, AppSpacing.base, AppSpacing.sm),
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: tileCount,
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+        itemBuilder: (_, _) =>
+            SizedBox(width: tileWidth, child: _CategoryTileSkeleton()),
+      ),
+    );
+  }
+}
+
+class _CategoryTileSkeleton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          ShimmerBox(height: 48, width: 48, radius: AppRadius.md),
+          SizedBox(height: 8),
+          ShimmerBox(height: 10, width: 48, radius: 4),
+          SizedBox(height: 3),
+          ShimmerBox(height: 10, width: 36, radius: 4),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Product carousel (horizontal) ────────────────────────────────────────────
+
+class _ProductCarouselSkeleton extends StatelessWidget {
+  const _ProductCarouselSkeleton(
+      {required this.isDesktop, required this.width});
+  final bool isDesktop;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isDesktop) {
+      final cols = width >= 1400 ? 5 : (width >= 1100 ? 4 : 3);
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.base, AppSpacing.md, AppSpacing.base, AppSpacing.xs),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: cols,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
+            crossAxisSpacing: AppSpacing.sm,
+            mainAxisSpacing: AppSpacing.sm,
+            childAspectRatio: 0.68,
+          ),
+          itemBuilder: (_, _) => const _ProductCardSkeleton(),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 210,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.base, AppSpacing.md, AppSpacing.base, AppSpacing.xs),
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: 4,
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+        itemBuilder: (_, _) => const SizedBox(
+          width: 152,
+          child: _ProductCardSkeleton(),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Ranked list skeleton ──────────────────────────────────────────────────────
+
+class _RankedListSkeleton extends StatelessWidget {
+  const _RankedListSkeleton(
+      {required this.isDesktop, required this.width});
+  final bool isDesktop;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isDesktop) {
+      final cols = width >= 1400 ? 3 : 2;
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.base, AppSpacing.md, AppSpacing.base, AppSpacing.xs),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: cols * 2,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
+            crossAxisSpacing: AppSpacing.sm,
+            mainAxisSpacing: AppSpacing.sm,
+            childAspectRatio: 3.8,
+          ),
+          itemBuilder: (_, _) => const _RankedItemSkeleton(),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.base, AppSpacing.sm, AppSpacing.base, AppSpacing.xs),
+      child: Column(
+        children: List.generate(
+          4,
+          (i) => Padding(
+            padding: EdgeInsets.only(
+                bottom: i < 3 ? AppSpacing.sm : 0),
+            child: const _RankedItemSkeleton(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Componentes atómicos ──────────────────────────────────────────────────────
 
 class _ProductCardSkeleton extends StatelessWidget {
   const _ProductCardSkeleton();
@@ -146,7 +280,7 @@ class _ProductCardSkeleton extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -158,22 +292,68 @@ class _ProductCardSkeleton extends StatelessWidget {
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ShimmerBox(height: 120, radius: 14),
+          ShimmerBox(height: 120, radius: AppRadius.md),
           Padding(
             padding: EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                ShimmerBox(height: 10, width: 60, radius: 3),
+                SizedBox(height: 5),
                 ShimmerBox(height: 11, width: double.infinity),
                 SizedBox(height: 4),
                 ShimmerBox(height: 11, width: 100),
                 SizedBox(height: 8),
-                ShimmerBox(height: 17, width: 80),
+                ShimmerBox(height: 16, width: 80),
                 SizedBox(height: 8),
-                ShimmerBox(height: 34),
+                ShimmerBox(height: 36, radius: AppRadius.sm),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RankedItemSkeleton extends StatelessWidget {
+  const _RankedItemSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: const Row(
+        children: [
+          ShimmerBox(height: 20, width: 20, radius: 4),
+          SizedBox(width: AppSpacing.sm),
+          ShimmerBox(height: 56, width: 56, radius: AppRadius.sm),
+          SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ShimmerBox(height: 12, width: double.infinity),
+                SizedBox(height: 5),
+                ShimmerBox(height: 12, width: 120),
+                SizedBox(height: 6),
+                ShimmerBox(height: 14, width: 80),
+              ],
+            ),
+          ),
+          SizedBox(width: AppSpacing.sm),
+          ShimmerBox(height: 18, width: 18, radius: 4),
         ],
       ),
     );

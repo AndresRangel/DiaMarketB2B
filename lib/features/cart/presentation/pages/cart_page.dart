@@ -1,11 +1,17 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/responsive/breakpoints.dart';
+import '../../../../core/shell/shell_key.dart';
 import '../../../../core/theme/app_config_model.dart';
 import '../../../../core/theme/theme_notifier.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../shared/constants/app_radius.dart';
+import '../../../../shared/constants/app_shadows.dart';
+import '../../../../shared/constants/app_spacing.dart';
+import '../../../../shared/constants/app_text_styles.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../domain/entities/cart_entity.dart';
@@ -23,12 +29,12 @@ class CartPage extends ConsumerWidget {
         MediaQuery.sizeOf(context).width >= Breakpoints.tablet;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: config.theme.backgroundColor,
       appBar: isDesktop
           ? null
-          : _buildAppBar(context, ref, cart, config.theme.primaryColor),
+          : _buildAppBar(context, ref, cart, config),
       body: cart.isEmpty
-          ? _buildEmptyCart(config.theme.primaryColor)
+          ? _buildEmptyCart(context, config)
           : Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(
@@ -41,36 +47,37 @@ class CartPage extends ConsumerWidget {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(
-      BuildContext context, WidgetRef ref, CartEntity cart, Color primaryColor) {
+  PreferredSizeWidget _buildAppBar(BuildContext context, WidgetRef ref,
+      CartEntity cart, RemoteAppConfig config) {
+    final primary = config.theme.primaryColor;
     return AppBar(
-      backgroundColor: primaryColor,
+      backgroundColor: primary,
       elevation: 0,
       automaticallyImplyLeading: false,
+      leading: IconButton(
+        icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 22),
+        onPressed: () => mainScaffoldKey.currentState?.openDrawer(),
+      ),
       title: Row(
         children: [
-          const Text(
+          Text(
             'Carrito',
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold),
+            style: AppTextStyles.titleMedium.copyWith(
+                color: Colors.white, fontWeight: FontWeight.w700),
           ),
           if (cart.itemCount > 0) ...[
-            const SizedBox(width: 10),
+            const SizedBox(width: AppSpacing.sm),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm, vertical: 3),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.25),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.full),
               ),
               child: Text(
-                '${cart.itemCount} ${cart.itemCount == 1 ? 'unidad' : 'unidades'}',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600),
+                '${cart.itemCount} uds.',
+                style: AppTextStyles.labelSmall.copyWith(
+                    color: Colors.white, fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -82,19 +89,35 @@ class CartPage extends ConsumerWidget {
             onPressed: () => confirmClearCart(context, ref),
             icon: const Icon(Icons.delete_outline,
                 color: Colors.white70, size: 18),
-            label: const Text('Vaciar',
-                style: TextStyle(color: Colors.white70, fontSize: 13)),
+            label: Text('Vaciar',
+                style: AppTextStyles.labelMedium
+                    .copyWith(color: Colors.white70)),
           ),
-        const SizedBox(width: 4),
+        const SizedBox(width: AppSpacing.xs),
       ],
     );
   }
 
-  Widget _buildEmptyCart(Color primaryColor) {
+  Widget _buildEmptyCart(BuildContext context, RemoteAppConfig config) {
+    final primary = config.theme.primaryColor;
     return EmptyState(
       icon: Icons.shopping_cart_outlined,
       message: 'Tu carrito está vacío',
       subtitle: 'Agrega productos desde el catálogo para comenzar tu pedido.',
+      action: FilledButton.icon(
+        onPressed: () => context.go('/home'),
+        icon: const Icon(Icons.storefront_outlined, size: 18),
+        label: const Text('Ir al catálogo'),
+        style: FilledButton.styleFrom(
+          backgroundColor: primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -112,7 +135,8 @@ void confirmClearCart(BuildContext context, WidgetRef ref) {
             child: const Text('Cancelar')),
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(true),
-          child: const Text('Vaciar', style: TextStyle(color: Colors.red)),
+          child: const Text('Vaciar',
+              style: TextStyle(color: Colors.red)),
         ),
       ],
     ),
@@ -133,46 +157,47 @@ class _CartDesktopLayout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final primary = config.theme.primaryColor;
+
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Columna izquierda: lista de ítems (60%) ───────────────────
+        // ── Lista de ítems (60%) ──────────────────────────────────────
         Expanded(
           flex: 6,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 8, 0),
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.base, AppSpacing.base, AppSpacing.sm, 0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       '${cart.items.length} ${cart.items.length == 1 ? 'producto' : 'productos'}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF666666),
-                      ),
+                      style: AppTextStyles.labelMedium.copyWith(
+                          color: config.theme.textSecondaryColor),
                     ),
                     TextButton.icon(
                       onPressed: () => confirmClearCart(context, ref),
-                      icon: const Icon(Icons.delete_outline,
-                          size: 16, color: Colors.red),
-                      label: const Text('Vaciar carrito',
-                          style: TextStyle(color: Colors.red, fontSize: 13)),
+                      icon: Icon(Icons.delete_outline,
+                          size: 16, color: config.theme.errorColor),
+                      label: Text('Vaciar carrito',
+                          style: AppTextStyles.labelMedium.copyWith(
+                              color: config.theme.errorColor)),
                     ),
                   ],
                 ),
               ),
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 24),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.base,
+                      AppSpacing.sm, AppSpacing.sm, AppSpacing.xl),
                   itemCount: cart.items.length,
                   itemBuilder: (_, i) => _CartItemCard(
                     item: cart.items[i],
-                    locale: config.locale,
-                    primaryColor: config.theme.primaryColor,
+                    config: config,
                     isDesktop: true,
                   ),
                 ),
@@ -181,12 +206,14 @@ class _CartDesktopLayout extends ConsumerWidget {
           ),
         ),
 
-        // ── Columna derecha: resumen sticky (40%) ─────────────────────
+        // ── Resumen sticky (40%) ──────────────────────────────────────
         SizedBox(
-          width: 380,
+          width: 360,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 16, 16, 24),
-            child: _OrderSummaryCard(cart: cart, config: config),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.sm,
+                AppSpacing.base, AppSpacing.base, AppSpacing.xl),
+            child: _OrderSummaryCard(
+                cart: cart, config: config, primary: primary),
           ),
         ),
       ],
@@ -194,7 +221,7 @@ class _CartDesktopLayout extends ConsumerWidget {
   }
 }
 
-// ── Mobile: lista + botón sticky ─────────────────────────────────────────────
+// ── Mobile: lista + sticky bar ────────────────────────────────────────────────
 
 class _CartMobileLayout extends ConsumerWidget {
   const _CartMobileLayout({required this.cart, required this.config});
@@ -208,14 +235,19 @@ class _CartMobileLayout extends ConsumerWidget {
       children: [
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.md,
+                AppSpacing.md, AppSpacing.md, AppSpacing.sm),
             itemCount: cart.items.length,
-            itemBuilder: (_, i) => _CartItemCard(
-              item: cart.items[i],
-              locale: config.locale,
-              primaryColor: config.theme.primaryColor,
-              isDesktop: false,
-            ),
+            itemBuilder: (_, i) {
+              final item = cart.items[i];
+              return _SwipableCartItem(
+                key: ValueKey(item.sku),
+                item: item,
+                config: config,
+                onDismissed: () =>
+                    ref.read(cartProvider.notifier).removeItem(item.sku),
+              );
+            },
           ),
         ),
         _MobileSummaryBar(cart: cart, config: config),
@@ -224,177 +256,346 @@ class _CartMobileLayout extends ConsumerWidget {
   }
 }
 
+// ── Swipe-to-delete wrapper (mobile only) ─────────────────────────────────────
+
+class _SwipableCartItem extends StatelessWidget {
+  const _SwipableCartItem({
+    super.key,
+    required this.item,
+    required this.config,
+    required this.onDismissed,
+  });
+
+  final CartItemEntity item;
+  final RemoteAppConfig config;
+  final VoidCallback onDismissed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dismissible(
+      key: ValueKey(item.sku),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => onDismissed(),
+      background: Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: Colors.red.shade600,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: AppSpacing.lg),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.delete_outline, color: Colors.white, size: 24),
+            const SizedBox(height: 4),
+            Text(
+              'Eliminar',
+              style: AppTextStyles.labelSmall.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+      child: _CartItemCard(item: item, config: config, isDesktop: false),
+    );
+  }
+}
+
 // ── Tarjeta de ítem ───────────────────────────────────────────────────────────
 
-class _CartItemCard extends ConsumerWidget {
+class _CartItemCard extends ConsumerStatefulWidget {
   const _CartItemCard({
     required this.item,
-    required this.locale,
-    required this.primaryColor,
+    required this.config,
     required this.isDesktop,
   });
 
   final CartItemEntity item;
-  final LocaleConfig locale;
-  final Color primaryColor;
+  final RemoteAppConfig config;
   final bool isDesktop;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final imageSize = isDesktop ? 80.0 : 68.0;
+  ConsumerState<_CartItemCard> createState() => _CartItemCardState();
+}
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+class _CartItemCardState extends ConsumerState<_CartItemCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = widget.config.locale;
+    final primary = widget.config.theme.primaryColor;
+    final surface = widget.config.theme.surfaceColor;
+    final textPrimary = widget.config.theme.textPrimaryColor;
+    final textSecondary = widget.config.theme.textSecondaryColor;
+    final imageSize = widget.isDesktop ? 96.0 : 80.0;
+    final hasDiscount = widget.item.discount > 0;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.basic,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: _hovered
+                ? primary.withValues(alpha: 0.20)
+                : textSecondary.withValues(alpha: 0.08),
           ),
-        ],
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Imagen
-          Container(
-            width: imageSize,
-            height: imageSize,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8F9FB),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFEEEEEE)),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: (item.imageUrl != null && item.imageUrl!.isNotEmpty)
-                  ? CachedNetworkImage(
-                      imageUrl: item.imageUrl!,
-                      fit: BoxFit.contain,
-                      placeholder: (_, _) => const Icon(
-                          Icons.inventory_2_outlined,
-                          color: Color(0xFFCFD8DC),
-                          size: 28),
-                      errorWidget: (_, _, _) => const Icon(
-                          Icons.inventory_2_outlined,
-                          color: Color(0xFFCFD8DC),
-                          size: 28),
-                    )
-                  : const Icon(Icons.inventory_2_outlined,
-                      color: Color(0xFFCFD8DC), size: 28),
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // Info + qty
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          boxShadow: _hovered ? AppShadows.level2 : AppShadows.level1,
+        ),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Imagen ────────────────────────────────────────────────
+            Stack(
               children: [
-                Text(
-                  item.name,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1A2E),
-                    height: 1.3,
+                Container(
+                  width: imageSize,
+                  height: imageSize,
+                  decoration: BoxDecoration(
+                    color: widget.config.theme.backgroundColor,
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    border: Border.all(
+                        color: textSecondary.withValues(alpha: 0.10)),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  CurrencyFormatter.format(item.unitFinalPrice, locale),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: primaryColor,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    child: (widget.item.imageUrl != null &&
+                            widget.item.imageUrl!.isNotEmpty)
+                        ? CachedNetworkImage(
+                            imageUrl: widget.item.imageUrl!,
+                            fit: BoxFit.contain,
+                            placeholder: (_, _) => Icon(
+                                Icons.inventory_2_outlined,
+                                color: textSecondary.withValues(alpha: 0.3),
+                                size: 28),
+                            errorWidget: (_, _, _) => Icon(
+                                Icons.inventory_2_outlined,
+                                color: textSecondary.withValues(alpha: 0.3),
+                                size: 28),
+                          )
+                        : Icon(Icons.inventory_2_outlined,
+                            color: textSecondary.withValues(alpha: 0.3),
+                            size: 28),
                   ),
                 ),
-                const SizedBox(height: 10),
-                // Qty selector
-                Row(
-                  children: [
-                    _QtyButton(
-                      icon: item.quantity == 1
-                          ? Icons.delete_outline
-                          : Icons.remove,
-                      color: item.quantity == 1
-                          ? Colors.red.shade400
-                          : primaryColor,
-                      onTap: () {
-                        if (item.quantity == 1) {
-                          ref
-                              .read(cartProvider.notifier)
-                              .removeItem(item.sku);
-                        } else {
-                          ref.read(cartProvider.notifier).updateQuantity(
-                              item.sku, item.quantity - 1);
-                        }
-                      },
-                    ),
-                    Container(
-                      width: 44,
-                      alignment: Alignment.center,
+                // Badge de descuento sobre la imagen
+                if (hasDiscount)
+                  Positioned(
+                    top: 4,
+                    left: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade600,
+                        borderRadius: BorderRadius.circular(AppRadius.xs),
+                      ),
                       child: Text(
-                        '${item.quantity}',
+                        '-${(widget.item.discount * 100).round()}%',
                         style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1A2E),
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
-                    _QtyButton(
-                      icon: Icons.add,
-                      color: primaryColor,
-                      onTap: () => ref
-                          .read(cartProvider.notifier)
-                          .updateQuantity(item.sku, item.quantity + 1),
-                    ),
-                  ],
-                ),
+                  ),
               ],
             ),
-          ),
 
-          const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.md),
 
-          // Total línea
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                CurrencyFormatter.format(item.lineTotal, locale),
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A2E),
-                ),
+            // ── Info + qty selector ───────────────────────────────────
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // SKU
+                  Text(
+                    widget.item.sku,
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: textSecondary.withValues(alpha: 0.6),
+                      fontSize: 10,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  // Nombre
+                  Text(
+                    widget.item.name,
+                    style: AppTextStyles.productName.copyWith(
+                      color: textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  // Precios: si hay descuento → tachado + final
+                  if (hasDiscount) ...[
+                    Row(
+                      children: [
+                        Text(
+                          CurrencyFormatter.format(
+                              widget.item.basePrice +
+                                  widget.item.taxAmount +
+                                  widget.item.icoAmount,
+                              locale),
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: textSecondary.withValues(alpha: 0.5),
+                            decoration: TextDecoration.lineThrough,
+                            decorationColor: textSecondary.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          CurrencyFormatter.format(
+                              widget.item.unitFinalPrice, locale),
+                          style: AppTextStyles.labelMedium.copyWith(
+                            color: Colors.red.shade600,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Ahorro por unidad
+                    Text(
+                      'Ahorras ${CurrencyFormatter.format(widget.item.discountAmount, locale)} c/u',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: widget.config.theme.successColor,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ] else
+                    Text(
+                      CurrencyFormatter.format(
+                          widget.item.unitFinalPrice, locale),
+                      style: AppTextStyles.labelMedium.copyWith(
+                          color: textSecondary),
+                    ),
+                  const SizedBox(height: AppSpacing.sm),
+                  // Qty selector
+                  _QtySelector(
+                    qty: widget.item.quantity,
+                    primaryColor: primary,
+                    onDecrement: () {
+                      if (widget.item.quantity == 1) {
+                        ref
+                            .read(cartProvider.notifier)
+                            .removeItem(widget.item.sku);
+                      } else {
+                        ref.read(cartProvider.notifier).updateQuantity(
+                            widget.item.sku, widget.item.quantity - 1);
+                      }
+                    },
+                    onIncrement: () => ref
+                        .read(cartProvider.notifier)
+                        .updateQuantity(
+                            widget.item.sku, widget.item.quantity + 1),
+                  ),
+                ],
               ),
-              if (item.quantity > 1)
+            ),
+
+            const SizedBox(width: AppSpacing.sm),
+
+            // ── Total de línea ────────────────────────────────────────
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
                 Text(
-                  '${item.quantity} uds.',
-                  style: const TextStyle(
-                      fontSize: 11, color: Color(0xFF9E9E9E)),
+                  CurrencyFormatter.format(widget.item.lineTotal, locale),
+                  style: AppTextStyles.priceMedium.copyWith(
+                      color: textPrimary),
                 ),
-            ],
-          ),
-        ],
+                if (widget.item.quantity > 1)
+                  Text(
+                    '${widget.item.quantity} uds.',
+                    style: AppTextStyles.labelSmall.copyWith(
+                        color: textSecondary),
+                  ),
+                if (hasDiscount && widget.item.quantity > 1) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '− ${CurrencyFormatter.format(widget.item.lineDiscountTotal, locale)}',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: widget.config.theme.successColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ── Botón de cantidad ─────────────────────────────────────────────────────────
+// ── Selector cantidad — touch target 44px ────────────────────────────────────
 
-class _QtyButton extends StatelessWidget {
-  const _QtyButton({
+class _QtySelector extends StatelessWidget {
+  const _QtySelector({
+    required this.qty,
+    required this.primaryColor,
+    required this.onDecrement,
+    required this.onIncrement,
+  });
+
+  final int qty;
+  final Color primaryColor;
+  final VoidCallback onDecrement;
+  final VoidCallback onIncrement;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDelete = qty == 1;
+    final decrementColor = isDelete ? Colors.red.shade400 : primaryColor;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _QtyBtn(
+          icon: isDelete ? Icons.delete_outline : Icons.remove,
+          color: decrementColor,
+          onTap: onDecrement,
+        ),
+        SizedBox(
+          width: 44,
+          height: 44,
+          child: Center(
+            child: Text(
+              '$qty',
+              style: AppTextStyles.titleSmall.copyWith(
+                color: primaryColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+        _QtyBtn(
+          icon: Icons.add,
+          color: primaryColor,
+          onTap: onIncrement,
+        ),
+      ],
+    );
+  }
+}
+
+class _QtyBtn extends StatelessWidget {
+  const _QtyBtn({
     required this.icon,
     required this.color,
     required this.onTap,
@@ -406,133 +607,160 @@ class _QtyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Container(
-        width: 32,
-        height: 32,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          color: color.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(color: color.withValues(alpha: 0.30)),
         ),
-        child: Icon(icon, size: 16, color: color),
+        child: Icon(icon, size: 18, color: color),
       ),
     );
   }
 }
 
-// ── Resumen del pedido (desktop card) ─────────────────────────────────────────
+// ── Resumen del pedido — desktop ──────────────────────────────────────────────
 
 class _OrderSummaryCard extends StatelessWidget {
-  const _OrderSummaryCard({required this.cart, required this.config});
+  const _OrderSummaryCard({
+    required this.cart,
+    required this.config,
+    required this.primary,
+  });
 
   final CartEntity cart;
   final RemoteAppConfig config;
+  final Color primary;
 
   @override
   Widget build(BuildContext context) {
     final locale = config.locale;
-    final primary = config.theme.primaryColor;
+    final textPrimary = config.theme.textPrimaryColor;
+    final textSecondary = config.theme.textSecondaryColor;
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: config.theme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+            color: textSecondary.withValues(alpha: 0.10)),
+        boxShadow: AppShadows.level1,
       ),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.base),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             'Resumen del pedido',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1A2E),
-            ),
+            style: AppTextStyles.titleSmall.copyWith(color: textPrimary),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.base),
+
           _SummaryRow(
             label: 'Subtotal (${cart.items.length} productos)',
             value: CurrencyFormatter.format(cart.totalBruto, locale),
+            textSecondary: textSecondary,
+            textPrimary: textPrimary,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.sm),
           _SummaryRow(
             label: 'IVA',
             value: '+ ${CurrencyFormatter.format(cart.totalIVA, locale)}',
-            valueColor: const Color(0xFFE65100),
+            textSecondary: textSecondary,
+            valueColor: config.theme.warningColor,
           ),
-          // ICO — solo se muestra si algún producto lo tiene
           if (cart.totalICO > 0) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.sm),
             _SummaryRow(
               label: 'Imp. Consumo (ICO)',
-              value: '+ ${CurrencyFormatter.format(cart.totalICO, locale)}',
-              valueColor: const Color(0xFFE65100),
+              value:
+                  '+ ${CurrencyFormatter.format(cart.totalICO, locale)}',
+              textSecondary: textSecondary,
+              valueColor: config.theme.warningColor,
             ),
           ],
-          // Descuentos de producto
           if (cart.totalProductDiscounts > 0) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.sm),
             _SummaryRow(
               label: 'Descuentos',
-              value: '− ${CurrencyFormatter.format(cart.totalProductDiscounts, locale)}',
-              valueColor: const Color(0xFF2E7D32),
+              value:
+                  '− ${CurrencyFormatter.format(cart.totalProductDiscounts, locale)}',
+              textSecondary: textSecondary,
+              valueColor: config.theme.successColor,
             ),
           ],
-          // Descuento de cupón (Fase 4)
           if (cart.couponDiscount > 0) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.sm),
             _SummaryRow(
               label: 'Cupón ${cart.couponCode ?? ""}',
-              value: '− ${CurrencyFormatter.format(cart.couponDiscount, locale)}',
-              valueColor: const Color(0xFF2E7D32),
+              value:
+                  '− ${CurrencyFormatter.format(cart.couponDiscount, locale)}',
+              textSecondary: textSecondary,
+              valueColor: config.theme.successColor,
             ),
           ],
-          const SizedBox(height: 14),
-          const Divider(height: 1),
-          const SizedBox(height: 14),
+
+          const SizedBox(height: AppSpacing.md),
+          Divider(height: 1, color: textSecondary.withValues(alpha: 0.12)),
+          const SizedBox(height: AppSpacing.md),
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Total',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A2E),
-                ),
-              ),
+              Text('Total',
+                  style: AppTextStyles.titleSmall.copyWith(
+                      color: textPrimary)),
               Text(
                 CurrencyFormatter.format(cart.totalOrden, locale),
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: primary,
-                ),
+                style:
+                    AppTextStyles.priceDisplay.copyWith(color: primary),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+
+          // Ahorro total si hay descuentos
+          if (cart.totalDescuentos > 0) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: config.theme.successColor.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: Text(
+                    'Ahorrás ${CurrencyFormatter.format(cart.totalDescuentos, locale)}',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: config.theme.successColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+
+          const SizedBox(height: AppSpacing.base),
           AppButton(
             label: 'Finalizar pedido',
-            onPressed: () {}, // TODO Bloque 6
+            onPressed: () {}, // TODO Fase 3 Bloque 6
             isFullWidth: true,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.sm),
           Center(
             child: Text(
               '${cart.itemCount} unidades en el carrito',
-              style: const TextStyle(
-                  fontSize: 12, color: Color(0xFF9E9E9E)),
+              style: AppTextStyles.labelSmall.copyWith(
+                  color: textSecondary),
             ),
           ),
         ],
@@ -541,28 +769,38 @@ class _OrderSummaryCard extends StatelessWidget {
   }
 }
 
-// ── Barra de resumen móvil (sticky bottom) ────────────────────────────────────
+// ── Barra resumen mobile (sticky bottom) expandible ───────────────────────────
 
-class _MobileSummaryBar extends StatelessWidget {
+class _MobileSummaryBar extends StatefulWidget {
   const _MobileSummaryBar({required this.cart, required this.config});
 
   final CartEntity cart;
   final RemoteAppConfig config;
 
   @override
+  State<_MobileSummaryBar> createState() => _MobileSummaryBarState();
+}
+
+class _MobileSummaryBarState extends State<_MobileSummaryBar> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
-    final locale = config.locale;
-    final primary = config.theme.primaryColor;
+    final locale = widget.config.locale;
+    final primary = widget.config.theme.primaryColor;
+    final textSecondary = widget.config.theme.textSecondaryColor;
+    final textPrimary = widget.config.theme.textPrimaryColor;
     final bottom = MediaQuery.of(context).padding.bottom;
+    final cart = widget.cart;
+    final config = widget.config;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottom),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: config.theme.surfaceColor,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
+            blurRadius: 20,
             offset: const Offset(0, -4),
           ),
         ],
@@ -570,43 +808,160 @@ class _MobileSummaryBar extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Subtotal rápido
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'IVA incluido',
-                style: TextStyle(
-                    fontSize: 11, color: Colors.grey.shade500),
-              ),
-              RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'Total ',
-                      style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF666666)),
+          // ── Toggle para expandir desglose ─────────────────────────
+          GestureDetector(
+            onTap: () => setState(() => _expanded = !_expanded),
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.base, AppSpacing.sm, AppSpacing.base, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Ver desglose',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      AnimatedRotation(
+                        turns: _expanded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: Icon(Icons.expand_less_rounded,
+                            size: 16, color: primary),
+                      ),
+                    ],
+                  ),
+                  if (cart.totalDescuentos > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xs + 2, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: config.theme.successColor
+                            .withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppRadius.full),
+                      ),
+                      child: Text(
+                        'Ahorrás ${CurrencyFormatter.format(cart.totalDescuentos, locale)}',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: config.theme.successColor,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                        ),
+                      ),
                     ),
-                    TextSpan(
-                      text: CurrencyFormatter.format(
-                          cart.totalOrden, locale),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: primary,
+                ],
+              ),
+            ),
+          ),
+
+          // ── Desglose expandible ────────────────────────────────────
+          AnimatedSize(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            child: _expanded
+                ? Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.base, AppSpacing.sm,
+                        AppSpacing.base, 0),
+                    child: Column(
+                      children: [
+                        _SummaryRow(
+                          label: 'Subtotal',
+                          value: CurrencyFormatter.format(
+                              cart.totalBruto, locale),
+                          textSecondary: textSecondary,
+                          textPrimary: textPrimary,
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        _SummaryRow(
+                          label: 'IVA',
+                          value: '+ ${CurrencyFormatter.format(cart.totalIVA, locale)}',
+                          textSecondary: textSecondary,
+                          valueColor: config.theme.warningColor,
+                        ),
+                        if (cart.totalICO > 0) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          _SummaryRow(
+                            label: 'ICO',
+                            value: '+ ${CurrencyFormatter.format(cart.totalICO, locale)}',
+                            textSecondary: textSecondary,
+                            valueColor: config.theme.warningColor,
+                          ),
+                        ],
+                        if (cart.totalProductDiscounts > 0) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          _SummaryRow(
+                            label: 'Descuentos',
+                            value: '− ${CurrencyFormatter.format(cart.totalProductDiscounts, locale)}',
+                            textSecondary: textSecondary,
+                            valueColor: config.theme.successColor,
+                          ),
+                        ],
+                        if (cart.couponDiscount > 0) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          _SummaryRow(
+                            label: 'Cupón ${cart.couponCode ?? ""}',
+                            value: '− ${CurrencyFormatter.format(cart.couponDiscount, locale)}',
+                            textSecondary: textSecondary,
+                            valueColor: config.theme.successColor,
+                          ),
+                        ],
+                        const SizedBox(height: AppSpacing.sm),
+                        Divider(
+                            height: 1,
+                            color: textSecondary.withValues(alpha: 0.12)),
+                      ],
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+
+          // ── Total + botón ──────────────────────────────────────────
+          Padding(
+            padding: EdgeInsets.fromLTRB(AppSpacing.base, AppSpacing.sm,
+                AppSpacing.base, AppSpacing.md + bottom),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${cart.itemCount} uds.',
+                      style: AppTextStyles.labelSmall
+                          .copyWith(color: textSecondary),
+                    ),
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Total  ',
+                            style: AppTextStyles.labelMedium.copyWith(
+                                color: textSecondary),
+                          ),
+                          TextSpan(
+                            text: CurrencyFormatter.format(
+                                cart.totalOrden, locale),
+                            style: AppTextStyles.priceDisplay.copyWith(
+                                color: primary),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          AppButton(
-            label: 'Finalizar pedido',
-            onPressed: () {}, // TODO Bloque 6
-            isFullWidth: true,
+                const SizedBox(height: AppSpacing.sm),
+                AppButton(
+                  label: 'Finalizar pedido',
+                  onPressed: () {}, // TODO Fase 3 Bloque 6
+                  isFullWidth: true,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -614,17 +969,21 @@ class _MobileSummaryBar extends StatelessWidget {
   }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Fila de resumen ───────────────────────────────────────────────────────────
 
 class _SummaryRow extends StatelessWidget {
   const _SummaryRow({
     required this.label,
     required this.value,
+    required this.textSecondary,
+    this.textPrimary,
     this.valueColor,
   });
 
   final String label;
   final String value;
+  final Color textSecondary;
+  final Color? textPrimary;
   final Color? valueColor;
 
   @override
@@ -633,14 +992,12 @@ class _SummaryRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label,
-            style: const TextStyle(
-                fontSize: 13, color: Color(0xFF666666))),
+            style: AppTextStyles.bodyMedium.copyWith(
+                color: textSecondary)),
         Text(
           value,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: valueColor ?? const Color(0xFF1A1A2E),
+          style: AppTextStyles.priceSmall.copyWith(
+            color: valueColor ?? textPrimary ?? textSecondary,
           ),
         ),
       ],

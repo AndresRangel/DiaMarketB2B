@@ -1,22 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Campo de texto con estilo consistente en toda la app.
-///
-/// Uso:
-/// ```dart
-/// AppTextField(
-///   controller: _emailController,
-///   label: TrKeys.username.tr(),
-///   keyboardType: TextInputType.emailAddress,
-/// )
-///
-/// // Para contraseñas:
-/// AppTextField(
-///   controller: _passwordController,
-///   label: TrKeys.password.tr(),
-///   isPassword: true,
-/// )
-/// ```
+/// Campo de texto con estilo consistente y bordes temáticos.
 class AppTextField extends StatefulWidget {
   final TextEditingController controller;
   final String label;
@@ -54,7 +38,6 @@ class AppTextField extends StatefulWidget {
 }
 
 class _AppTextFieldState extends State<AppTextField> {
-  // El ojo de mostrar/ocultar contraseña es estado de UI → vive en el widget
   late bool _obscureText;
 
   @override
@@ -65,6 +48,9 @@ class _AppTextFieldState extends State<AppTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final borderRadius = BorderRadius.circular(12);
+
     return TextField(
       controller: widget.controller,
       obscureText: _obscureText,
@@ -75,21 +61,99 @@ class _AppTextFieldState extends State<AppTextField> {
       focusNode: widget.focusNode,
       textInputAction: widget.textInputAction,
       onSubmitted: widget.onSubmitted,
+      style: const TextStyle(fontSize: 15),
       decoration: InputDecoration(
         labelText: widget.label,
         hintText: widget.hint,
         errorText: widget.errorText,
-        prefixIcon: widget.prefixIcon,
-        // Ícono para mostrar/ocultar contraseña
+        prefixIcon: widget.prefixIcon != null
+            ? IconTheme(
+                data: IconThemeData(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.45),
+                  size: 20,
+                ),
+                child: widget.prefixIcon!,
+              )
+            : null,
         suffixIcon: widget.isPassword
             ? IconButton(
                 icon: Icon(
                   _obscureText ? Icons.visibility_off : Icons.visibility,
+                  size: 20,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.45),
                 ),
-                onPressed: () => setState(() => _obscureText = !_obscureText),
+                onPressed: () =>
+                    setState(() => _obscureText = !_obscureText),
               )
             : null,
-        border: const OutlineInputBorder(),
+        contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16, vertical: 16),
+        filled: true,
+        fillColor: widget.enabled
+            ? Theme.of(context).colorScheme.surface
+            : Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withValues(alpha: 0.04),
+        border: OutlineInputBorder(
+          borderRadius: borderRadius,
+          borderSide: BorderSide(
+            color: Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withValues(alpha: 0.15),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: borderRadius,
+          borderSide: BorderSide(
+            color: Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withValues(alpha: 0.15),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: borderRadius,
+          borderSide: BorderSide(color: primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: borderRadius,
+          borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.error, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: borderRadius,
+          borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.error, width: 2),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: borderRadius,
+          borderSide: BorderSide(
+            color: Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withValues(alpha: 0.08),
+          ),
+        ),
+        labelStyle: TextStyle(
+          color: Theme.of(context)
+              .colorScheme
+              .onSurface
+              .withValues(alpha: 0.55),
+          fontSize: 14,
+        ),
+        floatingLabelStyle: TextStyle(
+          color: primary,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }

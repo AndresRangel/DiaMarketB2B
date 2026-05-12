@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/shell/shell_key.dart';
+
 class PromotionsPage extends StatelessWidget {
   const PromotionsPage({super.key});
 
@@ -9,6 +11,10 @@ class PromotionsPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Promociones'),
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.menu_rounded, size: 22),
+          onPressed: () => mainScaffoldKey.currentState?.openDrawer(),
+        ),
       ),
       body: const Center(
         child: Column(

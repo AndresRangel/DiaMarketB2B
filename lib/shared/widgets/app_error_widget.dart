@@ -1,58 +1,82 @@
 import 'package:flutter/material.dart';
 
-/// Widget de error con mensaje y botón "Reintentar".
-///
-/// Se usa dentro del .when() de un AsyncValue cuando hay error:
-/// ```dart
-/// catalogState.when(
-///   loading: () => const LoadingIndicator(),
-///   error: (e, _) => AppErrorWidget(
-///     message: e.toString(),
-///     onRetry: () => ref.read(catalogNotifierProvider.notifier).refresh(),
-///   ),
-///   data: (products) => ProductList(products),
-/// )
-/// ```
-class AppErrorWidget extends StatelessWidget {
-  final String message;
-  final VoidCallback? onRetry;
+import '../constants/app_spacing.dart';
+import '../constants/app_text_styles.dart';
+import 'app_button.dart';
 
+/// Widget de error con ícono, mensaje y botón "Reintentar".
+class AppErrorWidget extends StatelessWidget {
   const AppErrorWidget({
     super.key,
     required this.message,
     this.onRetry,
+    this.title,
   });
+
+  final String message;
+  final VoidCallback? onRetry;
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final errorColor = Theme.of(context).colorScheme.error;
+    final textSecondary = Theme.of(context)
+        .colorScheme
+        .onSurface
+        .withValues(alpha: 0.55);
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: theme.colorScheme.error,
+            // Ícono en círculo error
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: errorColor.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: errorColor.withValues(alpha: 0.20),
+                  width: 1.5,
+                ),
+              ),
+              child: Icon(
+                Icons.error_outline_rounded,
+                size: 36,
+                color: errorColor,
+              ),
             ),
-            const SizedBox(height: 16),
+
+            const SizedBox(height: AppSpacing.lg),
+
             Text(
-              message,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+              title ?? 'Algo salió mal',
+              style: AppTextStyles.titleSmall.copyWith(
+                fontWeight: FontWeight.w700,
               ),
               textAlign: TextAlign.center,
             ),
+
+            const SizedBox(height: AppSpacing.sm),
+
+            Text(
+              message,
+              style: AppTextStyles.bodyMedium.copyWith(color: textSecondary),
+              textAlign: TextAlign.center,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+            ),
+
             if (onRetry != null) ...[
-              const SizedBox(height: 24),
-              OutlinedButton.icon(
+              const SizedBox(height: AppSpacing.xl),
+              AppButton(
+                label: 'Reintentar',
+                icon: Icons.refresh_rounded,
                 onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                // 'Reintentar' — se conectará con TrKeys.retry.tr() en Bloque 10
-                label: const Text('Reintentar'),
+                isFullWidth: false,
               ),
             ],
           ],
