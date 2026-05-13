@@ -17,10 +17,10 @@ part 'stored_session_dto.freezed.dart';
 abstract class StoredSessionDto with _$StoredSessionDto {
   const factory StoredSessionDto({
     required String sessionToken,
+    required String refreshToken,
+    required int expiresAt,
     required UserDto user,
     required List<CompanyDto> companies,
-    /// ID de la empresa actualmente seleccionada — puede cambiar
-    /// si el usuario elige otra empresa durante la sesión.
     required String selectedCompanyId,
   }) = _StoredSessionDto;
 

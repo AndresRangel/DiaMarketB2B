@@ -517,4 +517,90 @@
 - freezed: 3.2.5 / freezed_annotation: 3.1.0
 - fpdart: 1.2.0
 - easy_localization: 3.0.8
+
+---
+
+## 🔌 CONEXIÓN BACKEND REAL — APIs reales conectadas (2026-05-12)
+
+> Sesión de integración: reemplazar placeholders por endpoints Supabase reales entregados por el cliente.
+
+### S43 — Config tema/branding
+
+| Cambio | Detalle |
+|--------|---------|
+| Método HTTP | GET → **POST** |
+| Parámetro | `empresa_id` (query param) → `p_country_code` (body JSON) |
+| País por defecto | `'CO'` — se detecta del dispositivo via `platformDispatcher.locale.countryCode` |
+| Archivos | `remote_config_data_source.dart`, `remote_config_repository.dart`, `theme_notifier.dart`, `splash_page.dart` |
+
+### S01 — Login
+
+| Cambio | Detalle |
+|--------|---------|
+| Endpoint | `/rest/v1/rpc/login_user` → **`/auth/v1/token?grant_type=password`** (Supabase Auth) |
+| Body | `{"p_email": email}` → `{"email": email, "password": password}` |
+| Respuesta | `[{id, email}]` → `{access_token, refresh_token, expires_at, user{...}}` |
+| `user_metadata.full_name` | Extraído manualmente en el data source |
+| Archivos | `auth_remote_data_source.dart`, `login_response_dto.dart`, `user_dto.dart` |
+
+### Nuevos campos en entidades/DTOs
+
+| Modelo | Campos añadidos |
+|--------|----------------|
+| `LoginResponseDto` | `accessToken`, `refreshToken`, `expiresAt` (reemplaza `sessionToken`) |
+| `StoredSessionDto` | `refreshToken`, `expiresAt` |
+| `AuthSessionEntity` | `refreshToken`, `expiresAt` |
+| `UserDto` / `UserEntity` | `fullName` (de `user_metadata.full_name`) |
+
+### Sistema de tokens — DioClient refactorizado
+
+- Callbacks `_getToken`/`_refreshToken` → reemplazados por campos en memoria `_accessToken` / `_refreshTokenValue`
+- `setTokens(accessToken, refreshToken)` — llamado tras login y tras restore de sesión
+- `clearTokens()` — llamado en logout
+- `setSessionExpiredHandler(callback)` — registra qué hacer cuando el refresh falla
+- Auto-refresh en 401: interceptor llama `/auth/v1/token?grant_type=refresh_token` y reintenta el request original
+
+### Flujo de sesión completo
+
+```
+Login exitoso → setTokens() en DioClient → todos los requests llevan Authorization: Bearer
+App reabre   → getSavedSession() → setTokens() restaurado → sin login de nuevo
+Token expira → interceptor 401 → refresh → nuevo access_token → reintenta request
+Refresh falla → clearTokens() → AuthNotifier.logout() → router → /login
+```
+
+### Wire-up de session expired (sin dependencia circular)
+
+- `dioClientProvider` registra callback vía `ref.read(authProvider.notifier).logout()`
+- `ref.read` (lazy) evita la dependencia circular: `dioClient` no escucha `authProvider` en build-time
+- El callback solo ejecuta cuando ocurre un 401 con refresh fallido en runtime
+
+### Manejo de errores Supabase Auth
+
+Supabase retorna `{"code": 400, "error_code": "...", "msg": "..."}`.
+`DioClient._extractMessage()` y `handleDioException()` actualizados:
+
+| error_code | Status | Failure | Mensaje al usuario |
+|---|---|---|---|
+| `invalid_credentials` / `user_not_found` / `invalid_grant` | 400 | `Failure.unauthorized` | "Usuario o contraseña incorrectos." |
+| `email_not_confirmed` | 400 | `Failure.unauthorized` | "Debes confirmar tu email antes de ingresar." |
+| cualquier 401 | 401 | `Failure.unauthorized` | "Sesión expirada. Inicia sesión de nuevo." |
+| cualquier 429 | 429 | `Failure.server` | "Demasiados intentos. Espera un momento." |
+
+### Archivos modificados en esta sesión
+- `lib/core/network/api_endpoints.dart`
+- `lib/core/network/dio_client.dart`
+- `lib/core/providers/dio_provider.dart`
+- `lib/core/theme/remote_config_data_source.dart`
+- `lib/core/theme/remote_config_repository.dart`
+- `lib/core/theme/theme_notifier.dart`
+- `lib/features/auth/data/datasources/auth_remote_data_source.dart`
+- `lib/features/auth/data/dtos/login_response_dto.dart`
+- `lib/features/auth/data/dtos/stored_session_dto.dart`
+- `lib/features/auth/data/dtos/user_dto.dart`
+- `lib/features/auth/data/mappers/auth_mappers.dart`
+- `lib/features/auth/data/repositories/auth_repository_impl.dart`
+- `lib/features/auth/domain/entities/auth_session_entity.dart`
+- `lib/features/auth/domain/entities/user_entity.dart`
+- `lib/features/auth/presentation/pages/splash_page.dart`
 - iOS deployment target: 15.0 (Firebase lo requiere)

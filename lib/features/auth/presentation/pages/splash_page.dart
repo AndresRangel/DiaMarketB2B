@@ -23,7 +23,9 @@ class _SplashPageState extends ConsumerState<SplashPage> {
   }
 
   Future<void> _initialize() async {
-    await ref.read(themeProvider.notifier).loadConfig('');
+    final countryCode =
+        WidgetsBinding.instance.platformDispatcher.locale.countryCode ?? 'CO';
+    await ref.read(themeProvider.notifier).loadConfig(countryCode);
     if (mounted) setState(() => _configLoaded = true);
     await Future.delayed(const Duration(seconds: 2));
     await ref.read(authProvider.notifier).initialize();

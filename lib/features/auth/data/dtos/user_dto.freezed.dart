@@ -15,9 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$UserDto {
 
- String get id; String get username; String? get email; String? get phone; String? get role;// JsonKey mapea el nombre del JSON al nombre de la variable Dart.
-// Si el backend usa snake_case y Dart usa camelCase, aquí se reconcilia.
-@JsonKey(name: 'is_approved') bool get isApproved;
+ String get id; String get username; String? get email; String? get phone; String? get role;@JsonKey(name: 'full_name') String? get fullName;@JsonKey(name: 'is_approved') bool get isApproved;
 /// Create a copy of UserDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,16 +28,16 @@ $UserDtoCopyWith<UserDto> get copyWith => _$UserDtoCopyWithImpl<UserDto>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserDto&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.role, role) || other.role == role)&&(identical(other.isApproved, isApproved) || other.isApproved == isApproved));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserDto&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.role, role) || other.role == role)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.isApproved, isApproved) || other.isApproved == isApproved));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,username,email,phone,role,isApproved);
+int get hashCode => Object.hash(runtimeType,id,username,email,phone,role,fullName,isApproved);
 
 @override
 String toString() {
-  return 'UserDto(id: $id, username: $username, email: $email, phone: $phone, role: $role, isApproved: $isApproved)';
+  return 'UserDto(id: $id, username: $username, email: $email, phone: $phone, role: $role, fullName: $fullName, isApproved: $isApproved)';
 }
 
 
@@ -50,7 +48,7 @@ abstract mixin class $UserDtoCopyWith<$Res>  {
   factory $UserDtoCopyWith(UserDto value, $Res Function(UserDto) _then) = _$UserDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String username, String? email, String? phone, String? role,@JsonKey(name: 'is_approved') bool isApproved
+ String id, String username, String? email, String? phone, String? role,@JsonKey(name: 'full_name') String? fullName,@JsonKey(name: 'is_approved') bool isApproved
 });
 
 
@@ -67,13 +65,14 @@ class _$UserDtoCopyWithImpl<$Res>
 
 /// Create a copy of UserDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? username = null,Object? email = freezed,Object? phone = freezed,Object? role = freezed,Object? isApproved = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? username = null,Object? email = freezed,Object? phone = freezed,Object? role = freezed,Object? fullName = freezed,Object? isApproved = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
 as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String?,role: freezed == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
+as String?,fullName: freezed == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
 as String?,isApproved: null == isApproved ? _self.isApproved : isApproved // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
@@ -160,10 +159,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String username,  String? email,  String? phone,  String? role, @JsonKey(name: 'is_approved')  bool isApproved)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String username,  String? email,  String? phone,  String? role, @JsonKey(name: 'full_name')  String? fullName, @JsonKey(name: 'is_approved')  bool isApproved)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UserDto() when $default != null:
-return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that.isApproved);case _:
+return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that.fullName,_that.isApproved);case _:
   return orElse();
 
 }
@@ -181,10 +180,10 @@ return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String username,  String? email,  String? phone,  String? role, @JsonKey(name: 'is_approved')  bool isApproved)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String username,  String? email,  String? phone,  String? role, @JsonKey(name: 'full_name')  String? fullName, @JsonKey(name: 'is_approved')  bool isApproved)  $default,) {final _that = this;
 switch (_that) {
 case _UserDto():
-return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that.isApproved);case _:
+return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that.fullName,_that.isApproved);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +200,10 @@ return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String username,  String? email,  String? phone,  String? role, @JsonKey(name: 'is_approved')  bool isApproved)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String username,  String? email,  String? phone,  String? role, @JsonKey(name: 'full_name')  String? fullName, @JsonKey(name: 'is_approved')  bool isApproved)?  $default,) {final _that = this;
 switch (_that) {
 case _UserDto() when $default != null:
-return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that.isApproved);case _:
+return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that.fullName,_that.isApproved);case _:
   return null;
 
 }
@@ -216,7 +215,7 @@ return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that
 @JsonSerializable()
 
 class _UserDto implements UserDto {
-  const _UserDto({required this.id, required this.username, this.email, this.phone, this.role, @JsonKey(name: 'is_approved') this.isApproved = true});
+  const _UserDto({required this.id, required this.username, this.email, this.phone, this.role, @JsonKey(name: 'full_name') this.fullName, @JsonKey(name: 'is_approved') this.isApproved = true});
   factory _UserDto.fromJson(Map<String, dynamic> json) => _$UserDtoFromJson(json);
 
 @override final  String id;
@@ -224,8 +223,7 @@ class _UserDto implements UserDto {
 @override final  String? email;
 @override final  String? phone;
 @override final  String? role;
-// JsonKey mapea el nombre del JSON al nombre de la variable Dart.
-// Si el backend usa snake_case y Dart usa camelCase, aquí se reconcilia.
+@override@JsonKey(name: 'full_name') final  String? fullName;
 @override@JsonKey(name: 'is_approved') final  bool isApproved;
 
 /// Create a copy of UserDto
@@ -241,16 +239,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserDto&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.role, role) || other.role == role)&&(identical(other.isApproved, isApproved) || other.isApproved == isApproved));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserDto&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.role, role) || other.role == role)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.isApproved, isApproved) || other.isApproved == isApproved));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,username,email,phone,role,isApproved);
+int get hashCode => Object.hash(runtimeType,id,username,email,phone,role,fullName,isApproved);
 
 @override
 String toString() {
-  return 'UserDto(id: $id, username: $username, email: $email, phone: $phone, role: $role, isApproved: $isApproved)';
+  return 'UserDto(id: $id, username: $username, email: $email, phone: $phone, role: $role, fullName: $fullName, isApproved: $isApproved)';
 }
 
 
@@ -261,7 +259,7 @@ abstract mixin class _$UserDtoCopyWith<$Res> implements $UserDtoCopyWith<$Res> {
   factory _$UserDtoCopyWith(_UserDto value, $Res Function(_UserDto) _then) = __$UserDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String username, String? email, String? phone, String? role,@JsonKey(name: 'is_approved') bool isApproved
+ String id, String username, String? email, String? phone, String? role,@JsonKey(name: 'full_name') String? fullName,@JsonKey(name: 'is_approved') bool isApproved
 });
 
 
@@ -278,13 +276,14 @@ class __$UserDtoCopyWithImpl<$Res>
 
 /// Create a copy of UserDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? username = null,Object? email = freezed,Object? phone = freezed,Object? role = freezed,Object? isApproved = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? username = null,Object? email = freezed,Object? phone = freezed,Object? role = freezed,Object? fullName = freezed,Object? isApproved = null,}) {
   return _then(_UserDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
 as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String?,role: freezed == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
+as String?,fullName: freezed == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
 as String?,isApproved: null == isApproved ? _self.isApproved : isApproved // ignore: cast_nullable_to_non_nullable
 as bool,
   ));

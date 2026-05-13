@@ -15,9 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$StoredSessionDto {
 
- String get sessionToken; UserDto get user; List<CompanyDto> get companies;/// ID de la empresa actualmente seleccionada — puede cambiar
-/// si el usuario elige otra empresa durante la sesión.
- String get selectedCompanyId;
+ String get sessionToken; String get refreshToken; int get expiresAt; UserDto get user; List<CompanyDto> get companies; String get selectedCompanyId;
 /// Create a copy of StoredSessionDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,16 +28,16 @@ $StoredSessionDtoCopyWith<StoredSessionDto> get copyWith => _$StoredSessionDtoCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StoredSessionDto&&(identical(other.sessionToken, sessionToken) || other.sessionToken == sessionToken)&&(identical(other.user, user) || other.user == user)&&const DeepCollectionEquality().equals(other.companies, companies)&&(identical(other.selectedCompanyId, selectedCompanyId) || other.selectedCompanyId == selectedCompanyId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StoredSessionDto&&(identical(other.sessionToken, sessionToken) || other.sessionToken == sessionToken)&&(identical(other.refreshToken, refreshToken) || other.refreshToken == refreshToken)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.user, user) || other.user == user)&&const DeepCollectionEquality().equals(other.companies, companies)&&(identical(other.selectedCompanyId, selectedCompanyId) || other.selectedCompanyId == selectedCompanyId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,sessionToken,user,const DeepCollectionEquality().hash(companies),selectedCompanyId);
+int get hashCode => Object.hash(runtimeType,sessionToken,refreshToken,expiresAt,user,const DeepCollectionEquality().hash(companies),selectedCompanyId);
 
 @override
 String toString() {
-  return 'StoredSessionDto(sessionToken: $sessionToken, user: $user, companies: $companies, selectedCompanyId: $selectedCompanyId)';
+  return 'StoredSessionDto(sessionToken: $sessionToken, refreshToken: $refreshToken, expiresAt: $expiresAt, user: $user, companies: $companies, selectedCompanyId: $selectedCompanyId)';
 }
 
 
@@ -50,7 +48,7 @@ abstract mixin class $StoredSessionDtoCopyWith<$Res>  {
   factory $StoredSessionDtoCopyWith(StoredSessionDto value, $Res Function(StoredSessionDto) _then) = _$StoredSessionDtoCopyWithImpl;
 @useResult
 $Res call({
- String sessionToken, UserDto user, List<CompanyDto> companies, String selectedCompanyId
+ String sessionToken, String refreshToken, int expiresAt, UserDto user, List<CompanyDto> companies, String selectedCompanyId
 });
 
 
@@ -67,10 +65,12 @@ class _$StoredSessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of StoredSessionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? sessionToken = null,Object? user = null,Object? companies = null,Object? selectedCompanyId = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionToken = null,Object? refreshToken = null,Object? expiresAt = null,Object? user = null,Object? companies = null,Object? selectedCompanyId = null,}) {
   return _then(_self.copyWith(
 sessionToken: null == sessionToken ? _self.sessionToken : sessionToken // ignore: cast_nullable_to_non_nullable
-as String,user: null == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
+as String,refreshToken: null == refreshToken ? _self.refreshToken : refreshToken // ignore: cast_nullable_to_non_nullable
+as String,expiresAt: null == expiresAt ? _self.expiresAt : expiresAt // ignore: cast_nullable_to_non_nullable
+as int,user: null == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
 as UserDto,companies: null == companies ? _self.companies : companies // ignore: cast_nullable_to_non_nullable
 as List<CompanyDto>,selectedCompanyId: null == selectedCompanyId ? _self.selectedCompanyId : selectedCompanyId // ignore: cast_nullable_to_non_nullable
 as String,
@@ -167,10 +167,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionToken,  UserDto user,  List<CompanyDto> companies,  String selectedCompanyId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionToken,  String refreshToken,  int expiresAt,  UserDto user,  List<CompanyDto> companies,  String selectedCompanyId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StoredSessionDto() when $default != null:
-return $default(_that.sessionToken,_that.user,_that.companies,_that.selectedCompanyId);case _:
+return $default(_that.sessionToken,_that.refreshToken,_that.expiresAt,_that.user,_that.companies,_that.selectedCompanyId);case _:
   return orElse();
 
 }
@@ -188,10 +188,10 @@ return $default(_that.sessionToken,_that.user,_that.companies,_that.selectedComp
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionToken,  UserDto user,  List<CompanyDto> companies,  String selectedCompanyId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionToken,  String refreshToken,  int expiresAt,  UserDto user,  List<CompanyDto> companies,  String selectedCompanyId)  $default,) {final _that = this;
 switch (_that) {
 case _StoredSessionDto():
-return $default(_that.sessionToken,_that.user,_that.companies,_that.selectedCompanyId);case _:
+return $default(_that.sessionToken,_that.refreshToken,_that.expiresAt,_that.user,_that.companies,_that.selectedCompanyId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -208,10 +208,10 @@ return $default(_that.sessionToken,_that.user,_that.companies,_that.selectedComp
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionToken,  UserDto user,  List<CompanyDto> companies,  String selectedCompanyId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionToken,  String refreshToken,  int expiresAt,  UserDto user,  List<CompanyDto> companies,  String selectedCompanyId)?  $default,) {final _that = this;
 switch (_that) {
 case _StoredSessionDto() when $default != null:
-return $default(_that.sessionToken,_that.user,_that.companies,_that.selectedCompanyId);case _:
+return $default(_that.sessionToken,_that.refreshToken,_that.expiresAt,_that.user,_that.companies,_that.selectedCompanyId);case _:
   return null;
 
 }
@@ -223,10 +223,12 @@ return $default(_that.sessionToken,_that.user,_that.companies,_that.selectedComp
 @JsonSerializable()
 
 class _StoredSessionDto implements StoredSessionDto {
-  const _StoredSessionDto({required this.sessionToken, required this.user, required final  List<CompanyDto> companies, required this.selectedCompanyId}): _companies = companies;
+  const _StoredSessionDto({required this.sessionToken, required this.refreshToken, required this.expiresAt, required this.user, required final  List<CompanyDto> companies, required this.selectedCompanyId}): _companies = companies;
   factory _StoredSessionDto.fromJson(Map<String, dynamic> json) => _$StoredSessionDtoFromJson(json);
 
 @override final  String sessionToken;
+@override final  String refreshToken;
+@override final  int expiresAt;
 @override final  UserDto user;
  final  List<CompanyDto> _companies;
 @override List<CompanyDto> get companies {
@@ -235,8 +237,6 @@ class _StoredSessionDto implements StoredSessionDto {
   return EqualUnmodifiableListView(_companies);
 }
 
-/// ID de la empresa actualmente seleccionada — puede cambiar
-/// si el usuario elige otra empresa durante la sesión.
 @override final  String selectedCompanyId;
 
 /// Create a copy of StoredSessionDto
@@ -252,16 +252,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StoredSessionDto&&(identical(other.sessionToken, sessionToken) || other.sessionToken == sessionToken)&&(identical(other.user, user) || other.user == user)&&const DeepCollectionEquality().equals(other._companies, _companies)&&(identical(other.selectedCompanyId, selectedCompanyId) || other.selectedCompanyId == selectedCompanyId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StoredSessionDto&&(identical(other.sessionToken, sessionToken) || other.sessionToken == sessionToken)&&(identical(other.refreshToken, refreshToken) || other.refreshToken == refreshToken)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.user, user) || other.user == user)&&const DeepCollectionEquality().equals(other._companies, _companies)&&(identical(other.selectedCompanyId, selectedCompanyId) || other.selectedCompanyId == selectedCompanyId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,sessionToken,user,const DeepCollectionEquality().hash(_companies),selectedCompanyId);
+int get hashCode => Object.hash(runtimeType,sessionToken,refreshToken,expiresAt,user,const DeepCollectionEquality().hash(_companies),selectedCompanyId);
 
 @override
 String toString() {
-  return 'StoredSessionDto(sessionToken: $sessionToken, user: $user, companies: $companies, selectedCompanyId: $selectedCompanyId)';
+  return 'StoredSessionDto(sessionToken: $sessionToken, refreshToken: $refreshToken, expiresAt: $expiresAt, user: $user, companies: $companies, selectedCompanyId: $selectedCompanyId)';
 }
 
 
@@ -272,7 +272,7 @@ abstract mixin class _$StoredSessionDtoCopyWith<$Res> implements $StoredSessionD
   factory _$StoredSessionDtoCopyWith(_StoredSessionDto value, $Res Function(_StoredSessionDto) _then) = __$StoredSessionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String sessionToken, UserDto user, List<CompanyDto> companies, String selectedCompanyId
+ String sessionToken, String refreshToken, int expiresAt, UserDto user, List<CompanyDto> companies, String selectedCompanyId
 });
 
 
@@ -289,10 +289,12 @@ class __$StoredSessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of StoredSessionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? sessionToken = null,Object? user = null,Object? companies = null,Object? selectedCompanyId = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionToken = null,Object? refreshToken = null,Object? expiresAt = null,Object? user = null,Object? companies = null,Object? selectedCompanyId = null,}) {
   return _then(_StoredSessionDto(
 sessionToken: null == sessionToken ? _self.sessionToken : sessionToken // ignore: cast_nullable_to_non_nullable
-as String,user: null == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
+as String,refreshToken: null == refreshToken ? _self.refreshToken : refreshToken // ignore: cast_nullable_to_non_nullable
+as String,expiresAt: null == expiresAt ? _self.expiresAt : expiresAt // ignore: cast_nullable_to_non_nullable
+as int,user: null == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
 as UserDto,companies: null == companies ? _self._companies : companies // ignore: cast_nullable_to_non_nullable
 as List<CompanyDto>,selectedCompanyId: null == selectedCompanyId ? _self.selectedCompanyId : selectedCompanyId // ignore: cast_nullable_to_non_nullable
 as String,

@@ -8,17 +8,23 @@ part of 'login_response_dto.dart';
 
 _LoginResponseDto _$LoginResponseDtoFromJson(Map<String, dynamic> json) =>
     _LoginResponseDto(
-      sessionToken: json['session_token'] as String,
+      accessToken: json['access_token'] as String,
+      refreshToken: json['refresh_token'] as String,
+      expiresAt: (json['expires_at'] as num).toInt(),
       user: UserDto.fromJson(json['user'] as Map<String, dynamic>),
-      companies: (json['companies'] as List<dynamic>)
-          .map((e) => CompanyDto.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      companies:
+          (json['companies'] as List<dynamic>?)
+              ?.map((e) => CompanyDto.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
       selectedCompanyId: json['selected_company_id'] as String?,
     );
 
 Map<String, dynamic> _$LoginResponseDtoToJson(_LoginResponseDto instance) =>
     <String, dynamic>{
-      'session_token': instance.sessionToken,
+      'access_token': instance.accessToken,
+      'refresh_token': instance.refreshToken,
+      'expires_at': instance.expiresAt,
       'user': instance.user,
       'companies': instance.companies,
       'selected_company_id': instance.selectedCompanyId,

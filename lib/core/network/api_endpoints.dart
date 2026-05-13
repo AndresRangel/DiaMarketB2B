@@ -9,9 +9,8 @@ abstract class ApiEndpoints {
   // ── Autenticación (S01-S06) ───────────────────────────────────────────────
 
   /// S01 — Login con email y contraseña.
-  /// Función Supabase RPC: public.login_user(p_email)
-  /// ⚠️  [TEMP] Endpoint de desarrollo — solo valida email, ignora contraseña.
-  static const login = '/rest/v1/rpc/login_user';
+  /// Supabase Auth: valida credenciales y retorna JWT + refresh token.
+  static const login = '/auth/v1/token?grant_type=password';
 
   /// S02 — Enviar OTP al celular
   static const otpSend = '/otp/send'; // [PLACEHOLDER]
@@ -28,8 +27,9 @@ abstract class ApiEndpoints {
   /// S05 — Registrar token FCM del dispositivo
   static const registerFcmToken = '/auth/fcm-token'; // [PLACEHOLDER]
 
-  /// S06 — Renovar token de sesión
-  static const refreshToken = '/auth/refresh-token'; // [PLACEHOLDER]
+  /// S06 — Renovar token de sesión.
+  /// Supabase Auth: intercambia refresh_token por nuevo access_token.
+  static const refreshToken = '/auth/v1/token?grant_type=refresh_token';
 
   // ── Catálogo (S07-S10) ────────────────────────────────────────────────────
   //

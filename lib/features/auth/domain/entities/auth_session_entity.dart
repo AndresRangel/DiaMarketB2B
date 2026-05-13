@@ -20,14 +20,19 @@ abstract class AuthSessionEntity with _$AuthSessionEntity {
   const factory AuthSessionEntity({
     required UserEntity user,
 
-    /// Token JWT (o similar) que se envía en el header Authorization
+    /// Access token JWT — va en el header Authorization de cada request.
     required String sessionToken,
 
-    /// Todas las empresas a las que tiene acceso este usuario
+    /// Refresh token — se usa para renovar el access token cuando expira.
+    required String refreshToken,
+
+    /// Unix timestamp (segundos) en que expira el access token.
+    required int expiresAt,
+
+    /// Todas las empresas a las que tiene acceso este usuario.
     required List<CompanyEntity> companies,
 
     /// La empresa actualmente activa.
-    /// Si el usuario solo tiene una empresa, se selecciona automáticamente.
     required CompanyEntity selectedCompany,
   }) = _AuthSessionEntity;
 }

@@ -19,8 +19,7 @@ abstract class UserDto with _$UserDto {
     String? email,
     String? phone,
     String? role,
-    // JsonKey mapea el nombre del JSON al nombre de la variable Dart.
-    // Si el backend usa snake_case y Dart usa camelCase, aquí se reconcilia.
+    @JsonKey(name: 'full_name') String? fullName,
     @JsonKey(name: 'is_approved') @Default(true) bool isApproved,
   }) = _UserDto;
 

@@ -14,10 +14,11 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AuthSessionEntity {
 
- UserEntity get user;/// Token JWT (o similar) que se envía en el header Authorization
- String get sessionToken;/// Todas las empresas a las que tiene acceso este usuario
+ UserEntity get user;/// Access token JWT — va en el header Authorization de cada request.
+ String get sessionToken;/// Refresh token — se usa para renovar el access token cuando expira.
+ String get refreshToken;/// Unix timestamp (segundos) en que expira el access token.
+ int get expiresAt;/// Todas las empresas a las que tiene acceso este usuario.
  List<CompanyEntity> get companies;/// La empresa actualmente activa.
-/// Si el usuario solo tiene una empresa, se selecciona automáticamente.
  CompanyEntity get selectedCompany;
 /// Create a copy of AuthSessionEntity
 /// with the given fields replaced by the non-null parameter values.
@@ -29,16 +30,16 @@ $AuthSessionEntityCopyWith<AuthSessionEntity> get copyWith => _$AuthSessionEntit
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthSessionEntity&&(identical(other.user, user) || other.user == user)&&(identical(other.sessionToken, sessionToken) || other.sessionToken == sessionToken)&&const DeepCollectionEquality().equals(other.companies, companies)&&(identical(other.selectedCompany, selectedCompany) || other.selectedCompany == selectedCompany));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthSessionEntity&&(identical(other.user, user) || other.user == user)&&(identical(other.sessionToken, sessionToken) || other.sessionToken == sessionToken)&&(identical(other.refreshToken, refreshToken) || other.refreshToken == refreshToken)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&const DeepCollectionEquality().equals(other.companies, companies)&&(identical(other.selectedCompany, selectedCompany) || other.selectedCompany == selectedCompany));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,user,sessionToken,const DeepCollectionEquality().hash(companies),selectedCompany);
+int get hashCode => Object.hash(runtimeType,user,sessionToken,refreshToken,expiresAt,const DeepCollectionEquality().hash(companies),selectedCompany);
 
 @override
 String toString() {
-  return 'AuthSessionEntity(user: $user, sessionToken: $sessionToken, companies: $companies, selectedCompany: $selectedCompany)';
+  return 'AuthSessionEntity(user: $user, sessionToken: $sessionToken, refreshToken: $refreshToken, expiresAt: $expiresAt, companies: $companies, selectedCompany: $selectedCompany)';
 }
 
 
@@ -49,7 +50,7 @@ abstract mixin class $AuthSessionEntityCopyWith<$Res>  {
   factory $AuthSessionEntityCopyWith(AuthSessionEntity value, $Res Function(AuthSessionEntity) _then) = _$AuthSessionEntityCopyWithImpl;
 @useResult
 $Res call({
- UserEntity user, String sessionToken, List<CompanyEntity> companies, CompanyEntity selectedCompany
+ UserEntity user, String sessionToken, String refreshToken, int expiresAt, List<CompanyEntity> companies, CompanyEntity selectedCompany
 });
 
 
@@ -66,11 +67,13 @@ class _$AuthSessionEntityCopyWithImpl<$Res>
 
 /// Create a copy of AuthSessionEntity
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? user = null,Object? sessionToken = null,Object? companies = null,Object? selectedCompany = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? user = null,Object? sessionToken = null,Object? refreshToken = null,Object? expiresAt = null,Object? companies = null,Object? selectedCompany = null,}) {
   return _then(_self.copyWith(
 user: null == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
 as UserEntity,sessionToken: null == sessionToken ? _self.sessionToken : sessionToken // ignore: cast_nullable_to_non_nullable
-as String,companies: null == companies ? _self.companies : companies // ignore: cast_nullable_to_non_nullable
+as String,refreshToken: null == refreshToken ? _self.refreshToken : refreshToken // ignore: cast_nullable_to_non_nullable
+as String,expiresAt: null == expiresAt ? _self.expiresAt : expiresAt // ignore: cast_nullable_to_non_nullable
+as int,companies: null == companies ? _self.companies : companies // ignore: cast_nullable_to_non_nullable
 as List<CompanyEntity>,selectedCompany: null == selectedCompany ? _self.selectedCompany : selectedCompany // ignore: cast_nullable_to_non_nullable
 as CompanyEntity,
   ));
@@ -175,10 +178,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( UserEntity user,  String sessionToken,  List<CompanyEntity> companies,  CompanyEntity selectedCompany)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( UserEntity user,  String sessionToken,  String refreshToken,  int expiresAt,  List<CompanyEntity> companies,  CompanyEntity selectedCompany)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AuthSessionEntity() when $default != null:
-return $default(_that.user,_that.sessionToken,_that.companies,_that.selectedCompany);case _:
+return $default(_that.user,_that.sessionToken,_that.refreshToken,_that.expiresAt,_that.companies,_that.selectedCompany);case _:
   return orElse();
 
 }
@@ -196,10 +199,10 @@ return $default(_that.user,_that.sessionToken,_that.companies,_that.selectedComp
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( UserEntity user,  String sessionToken,  List<CompanyEntity> companies,  CompanyEntity selectedCompany)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( UserEntity user,  String sessionToken,  String refreshToken,  int expiresAt,  List<CompanyEntity> companies,  CompanyEntity selectedCompany)  $default,) {final _that = this;
 switch (_that) {
 case _AuthSessionEntity():
-return $default(_that.user,_that.sessionToken,_that.companies,_that.selectedCompany);case _:
+return $default(_that.user,_that.sessionToken,_that.refreshToken,_that.expiresAt,_that.companies,_that.selectedCompany);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -216,10 +219,10 @@ return $default(_that.user,_that.sessionToken,_that.companies,_that.selectedComp
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( UserEntity user,  String sessionToken,  List<CompanyEntity> companies,  CompanyEntity selectedCompany)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( UserEntity user,  String sessionToken,  String refreshToken,  int expiresAt,  List<CompanyEntity> companies,  CompanyEntity selectedCompany)?  $default,) {final _that = this;
 switch (_that) {
 case _AuthSessionEntity() when $default != null:
-return $default(_that.user,_that.sessionToken,_that.companies,_that.selectedCompany);case _:
+return $default(_that.user,_that.sessionToken,_that.refreshToken,_that.expiresAt,_that.companies,_that.selectedCompany);case _:
   return null;
 
 }
@@ -231,15 +234,19 @@ return $default(_that.user,_that.sessionToken,_that.companies,_that.selectedComp
 
 
 class _AuthSessionEntity implements AuthSessionEntity {
-  const _AuthSessionEntity({required this.user, required this.sessionToken, required final  List<CompanyEntity> companies, required this.selectedCompany}): _companies = companies;
+  const _AuthSessionEntity({required this.user, required this.sessionToken, required this.refreshToken, required this.expiresAt, required final  List<CompanyEntity> companies, required this.selectedCompany}): _companies = companies;
   
 
 @override final  UserEntity user;
-/// Token JWT (o similar) que se envía en el header Authorization
+/// Access token JWT — va en el header Authorization de cada request.
 @override final  String sessionToken;
-/// Todas las empresas a las que tiene acceso este usuario
+/// Refresh token — se usa para renovar el access token cuando expira.
+@override final  String refreshToken;
+/// Unix timestamp (segundos) en que expira el access token.
+@override final  int expiresAt;
+/// Todas las empresas a las que tiene acceso este usuario.
  final  List<CompanyEntity> _companies;
-/// Todas las empresas a las que tiene acceso este usuario
+/// Todas las empresas a las que tiene acceso este usuario.
 @override List<CompanyEntity> get companies {
   if (_companies is EqualUnmodifiableListView) return _companies;
   // ignore: implicit_dynamic_type
@@ -247,7 +254,6 @@ class _AuthSessionEntity implements AuthSessionEntity {
 }
 
 /// La empresa actualmente activa.
-/// Si el usuario solo tiene una empresa, se selecciona automáticamente.
 @override final  CompanyEntity selectedCompany;
 
 /// Create a copy of AuthSessionEntity
@@ -260,16 +266,16 @@ _$AuthSessionEntityCopyWith<_AuthSessionEntity> get copyWith => __$AuthSessionEn
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthSessionEntity&&(identical(other.user, user) || other.user == user)&&(identical(other.sessionToken, sessionToken) || other.sessionToken == sessionToken)&&const DeepCollectionEquality().equals(other._companies, _companies)&&(identical(other.selectedCompany, selectedCompany) || other.selectedCompany == selectedCompany));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthSessionEntity&&(identical(other.user, user) || other.user == user)&&(identical(other.sessionToken, sessionToken) || other.sessionToken == sessionToken)&&(identical(other.refreshToken, refreshToken) || other.refreshToken == refreshToken)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&const DeepCollectionEquality().equals(other._companies, _companies)&&(identical(other.selectedCompany, selectedCompany) || other.selectedCompany == selectedCompany));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,user,sessionToken,const DeepCollectionEquality().hash(_companies),selectedCompany);
+int get hashCode => Object.hash(runtimeType,user,sessionToken,refreshToken,expiresAt,const DeepCollectionEquality().hash(_companies),selectedCompany);
 
 @override
 String toString() {
-  return 'AuthSessionEntity(user: $user, sessionToken: $sessionToken, companies: $companies, selectedCompany: $selectedCompany)';
+  return 'AuthSessionEntity(user: $user, sessionToken: $sessionToken, refreshToken: $refreshToken, expiresAt: $expiresAt, companies: $companies, selectedCompany: $selectedCompany)';
 }
 
 
@@ -280,7 +286,7 @@ abstract mixin class _$AuthSessionEntityCopyWith<$Res> implements $AuthSessionEn
   factory _$AuthSessionEntityCopyWith(_AuthSessionEntity value, $Res Function(_AuthSessionEntity) _then) = __$AuthSessionEntityCopyWithImpl;
 @override @useResult
 $Res call({
- UserEntity user, String sessionToken, List<CompanyEntity> companies, CompanyEntity selectedCompany
+ UserEntity user, String sessionToken, String refreshToken, int expiresAt, List<CompanyEntity> companies, CompanyEntity selectedCompany
 });
 
 
@@ -297,11 +303,13 @@ class __$AuthSessionEntityCopyWithImpl<$Res>
 
 /// Create a copy of AuthSessionEntity
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? user = null,Object? sessionToken = null,Object? companies = null,Object? selectedCompany = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? user = null,Object? sessionToken = null,Object? refreshToken = null,Object? expiresAt = null,Object? companies = null,Object? selectedCompany = null,}) {
   return _then(_AuthSessionEntity(
 user: null == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
 as UserEntity,sessionToken: null == sessionToken ? _self.sessionToken : sessionToken // ignore: cast_nullable_to_non_nullable
-as String,companies: null == companies ? _self._companies : companies // ignore: cast_nullable_to_non_nullable
+as String,refreshToken: null == refreshToken ? _self.refreshToken : refreshToken // ignore: cast_nullable_to_non_nullable
+as String,expiresAt: null == expiresAt ? _self.expiresAt : expiresAt // ignore: cast_nullable_to_non_nullable
+as int,companies: null == companies ? _self._companies : companies // ignore: cast_nullable_to_non_nullable
 as List<CompanyEntity>,selectedCompany: null == selectedCompany ? _self.selectedCompany : selectedCompany // ignore: cast_nullable_to_non_nullable
 as CompanyEntity,
   ));

@@ -6,19 +6,16 @@ import 'user_dto.dart';
 part 'login_response_dto.g.dart';
 part 'login_response_dto.freezed.dart';
 
-/// Respuesta completa del endpoint S01 — Login.
-///
-/// Estructura placeholder — ajustar cuando llegue la documentación real.
-/// Campos esperados basados en la especificación del CLAUDE.md (sección 10):
-///   userData, sessionToken, listaEmpresas[]
+/// Respuesta del endpoint S01 — Supabase Auth (/auth/v1/token?grant_type=password).
 @freezed
 abstract class LoginResponseDto with _$LoginResponseDto {
   const factory LoginResponseDto({
-    @JsonKey(name: 'session_token') required String sessionToken,
+    @JsonKey(name: 'access_token') required String accessToken,
+    @JsonKey(name: 'refresh_token') required String refreshToken,
+    /// Unix timestamp (segundos) en que expira el access_token.
+    @JsonKey(name: 'expires_at') required int expiresAt,
     required UserDto user,
-    required List<CompanyDto> companies,
-    /// ID de la empresa que el backend sugiere seleccionar por defecto.
-    /// Si es null, la app selecciona la primera de la lista.
+    @Default([]) List<CompanyDto> companies,
     @JsonKey(name: 'selected_company_id') String? selectedCompanyId,
   }) = _LoginResponseDto;
 

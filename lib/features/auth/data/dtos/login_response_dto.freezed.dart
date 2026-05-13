@@ -15,9 +15,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$LoginResponseDto {
 
-@JsonKey(name: 'session_token') String get sessionToken; UserDto get user; List<CompanyDto> get companies;/// ID de la empresa que el backend sugiere seleccionar por defecto.
-/// Si es null, la app selecciona la primera de la lista.
-@JsonKey(name: 'selected_company_id') String? get selectedCompanyId;
+@JsonKey(name: 'access_token') String get accessToken;@JsonKey(name: 'refresh_token') String get refreshToken;/// Unix timestamp (segundos) en que expira el access_token.
+@JsonKey(name: 'expires_at') int get expiresAt; UserDto get user; List<CompanyDto> get companies;@JsonKey(name: 'selected_company_id') String? get selectedCompanyId;
 /// Create a copy of LoginResponseDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,16 +29,16 @@ $LoginResponseDtoCopyWith<LoginResponseDto> get copyWith => _$LoginResponseDtoCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LoginResponseDto&&(identical(other.sessionToken, sessionToken) || other.sessionToken == sessionToken)&&(identical(other.user, user) || other.user == user)&&const DeepCollectionEquality().equals(other.companies, companies)&&(identical(other.selectedCompanyId, selectedCompanyId) || other.selectedCompanyId == selectedCompanyId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LoginResponseDto&&(identical(other.accessToken, accessToken) || other.accessToken == accessToken)&&(identical(other.refreshToken, refreshToken) || other.refreshToken == refreshToken)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.user, user) || other.user == user)&&const DeepCollectionEquality().equals(other.companies, companies)&&(identical(other.selectedCompanyId, selectedCompanyId) || other.selectedCompanyId == selectedCompanyId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,sessionToken,user,const DeepCollectionEquality().hash(companies),selectedCompanyId);
+int get hashCode => Object.hash(runtimeType,accessToken,refreshToken,expiresAt,user,const DeepCollectionEquality().hash(companies),selectedCompanyId);
 
 @override
 String toString() {
-  return 'LoginResponseDto(sessionToken: $sessionToken, user: $user, companies: $companies, selectedCompanyId: $selectedCompanyId)';
+  return 'LoginResponseDto(accessToken: $accessToken, refreshToken: $refreshToken, expiresAt: $expiresAt, user: $user, companies: $companies, selectedCompanyId: $selectedCompanyId)';
 }
 
 
@@ -50,7 +49,7 @@ abstract mixin class $LoginResponseDtoCopyWith<$Res>  {
   factory $LoginResponseDtoCopyWith(LoginResponseDto value, $Res Function(LoginResponseDto) _then) = _$LoginResponseDtoCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'session_token') String sessionToken, UserDto user, List<CompanyDto> companies,@JsonKey(name: 'selected_company_id') String? selectedCompanyId
+@JsonKey(name: 'access_token') String accessToken,@JsonKey(name: 'refresh_token') String refreshToken,@JsonKey(name: 'expires_at') int expiresAt, UserDto user, List<CompanyDto> companies,@JsonKey(name: 'selected_company_id') String? selectedCompanyId
 });
 
 
@@ -67,10 +66,12 @@ class _$LoginResponseDtoCopyWithImpl<$Res>
 
 /// Create a copy of LoginResponseDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? sessionToken = null,Object? user = null,Object? companies = null,Object? selectedCompanyId = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? accessToken = null,Object? refreshToken = null,Object? expiresAt = null,Object? user = null,Object? companies = null,Object? selectedCompanyId = freezed,}) {
   return _then(_self.copyWith(
-sessionToken: null == sessionToken ? _self.sessionToken : sessionToken // ignore: cast_nullable_to_non_nullable
-as String,user: null == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
+accessToken: null == accessToken ? _self.accessToken : accessToken // ignore: cast_nullable_to_non_nullable
+as String,refreshToken: null == refreshToken ? _self.refreshToken : refreshToken // ignore: cast_nullable_to_non_nullable
+as String,expiresAt: null == expiresAt ? _self.expiresAt : expiresAt // ignore: cast_nullable_to_non_nullable
+as int,user: null == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
 as UserDto,companies: null == companies ? _self.companies : companies // ignore: cast_nullable_to_non_nullable
 as List<CompanyDto>,selectedCompanyId: freezed == selectedCompanyId ? _self.selectedCompanyId : selectedCompanyId // ignore: cast_nullable_to_non_nullable
 as String?,
@@ -167,10 +168,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'session_token')  String sessionToken,  UserDto user,  List<CompanyDto> companies, @JsonKey(name: 'selected_company_id')  String? selectedCompanyId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'access_token')  String accessToken, @JsonKey(name: 'refresh_token')  String refreshToken, @JsonKey(name: 'expires_at')  int expiresAt,  UserDto user,  List<CompanyDto> companies, @JsonKey(name: 'selected_company_id')  String? selectedCompanyId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LoginResponseDto() when $default != null:
-return $default(_that.sessionToken,_that.user,_that.companies,_that.selectedCompanyId);case _:
+return $default(_that.accessToken,_that.refreshToken,_that.expiresAt,_that.user,_that.companies,_that.selectedCompanyId);case _:
   return orElse();
 
 }
@@ -188,10 +189,10 @@ return $default(_that.sessionToken,_that.user,_that.companies,_that.selectedComp
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'session_token')  String sessionToken,  UserDto user,  List<CompanyDto> companies, @JsonKey(name: 'selected_company_id')  String? selectedCompanyId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'access_token')  String accessToken, @JsonKey(name: 'refresh_token')  String refreshToken, @JsonKey(name: 'expires_at')  int expiresAt,  UserDto user,  List<CompanyDto> companies, @JsonKey(name: 'selected_company_id')  String? selectedCompanyId)  $default,) {final _that = this;
 switch (_that) {
 case _LoginResponseDto():
-return $default(_that.sessionToken,_that.user,_that.companies,_that.selectedCompanyId);case _:
+return $default(_that.accessToken,_that.refreshToken,_that.expiresAt,_that.user,_that.companies,_that.selectedCompanyId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -208,10 +209,10 @@ return $default(_that.sessionToken,_that.user,_that.companies,_that.selectedComp
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'session_token')  String sessionToken,  UserDto user,  List<CompanyDto> companies, @JsonKey(name: 'selected_company_id')  String? selectedCompanyId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'access_token')  String accessToken, @JsonKey(name: 'refresh_token')  String refreshToken, @JsonKey(name: 'expires_at')  int expiresAt,  UserDto user,  List<CompanyDto> companies, @JsonKey(name: 'selected_company_id')  String? selectedCompanyId)?  $default,) {final _that = this;
 switch (_that) {
 case _LoginResponseDto() when $default != null:
-return $default(_that.sessionToken,_that.user,_that.companies,_that.selectedCompanyId);case _:
+return $default(_that.accessToken,_that.refreshToken,_that.expiresAt,_that.user,_that.companies,_that.selectedCompanyId);case _:
   return null;
 
 }
@@ -223,20 +224,21 @@ return $default(_that.sessionToken,_that.user,_that.companies,_that.selectedComp
 @JsonSerializable()
 
 class _LoginResponseDto implements LoginResponseDto {
-  const _LoginResponseDto({@JsonKey(name: 'session_token') required this.sessionToken, required this.user, required final  List<CompanyDto> companies, @JsonKey(name: 'selected_company_id') this.selectedCompanyId}): _companies = companies;
+  const _LoginResponseDto({@JsonKey(name: 'access_token') required this.accessToken, @JsonKey(name: 'refresh_token') required this.refreshToken, @JsonKey(name: 'expires_at') required this.expiresAt, required this.user, final  List<CompanyDto> companies = const [], @JsonKey(name: 'selected_company_id') this.selectedCompanyId}): _companies = companies;
   factory _LoginResponseDto.fromJson(Map<String, dynamic> json) => _$LoginResponseDtoFromJson(json);
 
-@override@JsonKey(name: 'session_token') final  String sessionToken;
+@override@JsonKey(name: 'access_token') final  String accessToken;
+@override@JsonKey(name: 'refresh_token') final  String refreshToken;
+/// Unix timestamp (segundos) en que expira el access_token.
+@override@JsonKey(name: 'expires_at') final  int expiresAt;
 @override final  UserDto user;
  final  List<CompanyDto> _companies;
-@override List<CompanyDto> get companies {
+@override@JsonKey() List<CompanyDto> get companies {
   if (_companies is EqualUnmodifiableListView) return _companies;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_companies);
 }
 
-/// ID de la empresa que el backend sugiere seleccionar por defecto.
-/// Si es null, la app selecciona la primera de la lista.
 @override@JsonKey(name: 'selected_company_id') final  String? selectedCompanyId;
 
 /// Create a copy of LoginResponseDto
@@ -252,16 +254,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LoginResponseDto&&(identical(other.sessionToken, sessionToken) || other.sessionToken == sessionToken)&&(identical(other.user, user) || other.user == user)&&const DeepCollectionEquality().equals(other._companies, _companies)&&(identical(other.selectedCompanyId, selectedCompanyId) || other.selectedCompanyId == selectedCompanyId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LoginResponseDto&&(identical(other.accessToken, accessToken) || other.accessToken == accessToken)&&(identical(other.refreshToken, refreshToken) || other.refreshToken == refreshToken)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.user, user) || other.user == user)&&const DeepCollectionEquality().equals(other._companies, _companies)&&(identical(other.selectedCompanyId, selectedCompanyId) || other.selectedCompanyId == selectedCompanyId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,sessionToken,user,const DeepCollectionEquality().hash(_companies),selectedCompanyId);
+int get hashCode => Object.hash(runtimeType,accessToken,refreshToken,expiresAt,user,const DeepCollectionEquality().hash(_companies),selectedCompanyId);
 
 @override
 String toString() {
-  return 'LoginResponseDto(sessionToken: $sessionToken, user: $user, companies: $companies, selectedCompanyId: $selectedCompanyId)';
+  return 'LoginResponseDto(accessToken: $accessToken, refreshToken: $refreshToken, expiresAt: $expiresAt, user: $user, companies: $companies, selectedCompanyId: $selectedCompanyId)';
 }
 
 
@@ -272,7 +274,7 @@ abstract mixin class _$LoginResponseDtoCopyWith<$Res> implements $LoginResponseD
   factory _$LoginResponseDtoCopyWith(_LoginResponseDto value, $Res Function(_LoginResponseDto) _then) = __$LoginResponseDtoCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'session_token') String sessionToken, UserDto user, List<CompanyDto> companies,@JsonKey(name: 'selected_company_id') String? selectedCompanyId
+@JsonKey(name: 'access_token') String accessToken,@JsonKey(name: 'refresh_token') String refreshToken,@JsonKey(name: 'expires_at') int expiresAt, UserDto user, List<CompanyDto> companies,@JsonKey(name: 'selected_company_id') String? selectedCompanyId
 });
 
 
@@ -289,10 +291,12 @@ class __$LoginResponseDtoCopyWithImpl<$Res>
 
 /// Create a copy of LoginResponseDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? sessionToken = null,Object? user = null,Object? companies = null,Object? selectedCompanyId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? accessToken = null,Object? refreshToken = null,Object? expiresAt = null,Object? user = null,Object? companies = null,Object? selectedCompanyId = freezed,}) {
   return _then(_LoginResponseDto(
-sessionToken: null == sessionToken ? _self.sessionToken : sessionToken // ignore: cast_nullable_to_non_nullable
-as String,user: null == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
+accessToken: null == accessToken ? _self.accessToken : accessToken // ignore: cast_nullable_to_non_nullable
+as String,refreshToken: null == refreshToken ? _self.refreshToken : refreshToken // ignore: cast_nullable_to_non_nullable
+as String,expiresAt: null == expiresAt ? _self.expiresAt : expiresAt // ignore: cast_nullable_to_non_nullable
+as int,user: null == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
 as UserDto,companies: null == companies ? _self._companies : companies // ignore: cast_nullable_to_non_nullable
 as List<CompanyDto>,selectedCompanyId: freezed == selectedCompanyId ? _self.selectedCompanyId : selectedCompanyId // ignore: cast_nullable_to_non_nullable
 as String?,

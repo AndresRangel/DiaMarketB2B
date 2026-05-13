@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../../core/providers/dio_provider.dart';
 import '../../../../core/services/secure_storage_service.dart';
 import '../../domain/entities/auth_session_entity.dart';
 import '../../domain/entities/company_entity.dart';
@@ -33,12 +34,15 @@ const _kSessionKey = 'auth_session';
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource _remoteDataSource;
   final SecureStorageService _secureStorage;
+  final DioClient _dioClient;
 
   const AuthRepositoryImpl({
     required AuthRemoteDataSource remoteDataSource,
     required SecureStorageService secureStorage,
+    required DioClient dioClient,
   })  : _remoteDataSource = remoteDataSource,
-        _secureStorage = secureStorage;
+        _secureStorage = secureStorage,
+        _dioClient = dioClient;
 
   // ── Operaciones de red ───────────────────────────────────────────────────
 
@@ -58,11 +62,13 @@ class AuthRepositoryImpl implements AuthRepository {
         imei: imei,
         companyCode: companyCode,
       );
-      // Convierte LoginResponseDto → AuthSessionEntity usando el mapper
       final session = dto.toEntity();
-      // Persiste la sesión para que la próxima vez que abra la app
-      // el usuario no tenga que volver a hacer login
       await saveSession(session);
+      // Inyecta tokens en DioClient para que los requests autenticados funcionen.
+      _dioClient.setTokens(
+        accessToken: session.sessionToken,
+        refreshToken: session.refreshToken,
+      );
       return Right(session);
     } on DioException catch (e) {
       // DioClient.handleDioException convierte el error HTTP en un Failure tipificado
@@ -189,10 +195,15 @@ class AuthRepositoryImpl implements AuthRepository {
       // jsonDecode convierte el String JSON en un Map<String, dynamic>
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
       final dto = StoredSessionDto.fromJson(json);
-      return dto.toEntity();
+      final session = dto.toEntity();
+      // Restaura tokens en DioClient para que los requests funcionen
+      // sin necesidad de hacer login de nuevo.
+      _dioClient.setTokens(
+        accessToken: session.sessionToken,
+        refreshToken: session.refreshToken,
+      );
+      return session;
     } catch (_) {
-      // Si el JSON está corrupto o el formato cambió, ignorar y tratar
-      // como si no hubiera sesión guardada
       return null;
     }
   }
@@ -227,5 +238,6 @@ AuthRepository authRepository(Ref ref) {
   return AuthRepositoryImpl(
     remoteDataSource: ref.watch(authRemoteDataSourceProvider),
     secureStorage: ref.watch(secureStorageProvider),
+    dioClient: ref.watch(dioClientProvider),
   );
 }

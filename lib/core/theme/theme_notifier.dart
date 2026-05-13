@@ -48,13 +48,13 @@ class ThemeNotifier extends _$ThemeNotifier {
   /// 1. Intentar descargar del backend
   /// 2. Si falla → el repositorio intenta desde cache local automáticamente
   /// 3. Si tampoco hay cache → se mantiene el fallback (estado inicial)
-  Future<void> loadConfig(String empresaId) async {
+  Future<void> loadConfig(String countryCode) async {
     // ref.read (no watch) porque solo ejecutamos la acción una vez,
     // no necesitamos reconstruir el notifier si el repositorio cambia.
     final repo = ref.read(remoteConfigRepositoryProvider);
 
     final result = await repo.getConfig(
-      empresaId: empresaId.isEmpty ? null : empresaId,
+      countryCode: countryCode.isEmpty ? 'CO' : countryCode,
     );
 
     // fold() maneja los dos casos del Either<Failure, RemoteAppConfig>:

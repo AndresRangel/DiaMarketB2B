@@ -14,12 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$UserEntity {
 
- String get id; String get username;/// Email puede no estar disponible en todos los flujos (ej. login con usuario)
- String? get email;/// Teléfono celular — se usa para envío de OTP
- String? get phone;/// Rol o tipo de cliente en el sistema (ej. "MAYORISTA", "DISTRIBUIDOR")
- String? get role;/// Si es false, el registro fue enviado pero está pendiente de aprobación.
-/// La app debe llevar al usuario a la pantalla PendingApprovalPage.
- bool get isApproved;
+ String get id; String get username; String? get email; String? get phone; String? get role; String? get fullName; bool get isApproved;
 /// Create a copy of UserEntity
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,16 +25,16 @@ $UserEntityCopyWith<UserEntity> get copyWith => _$UserEntityCopyWithImpl<UserEnt
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserEntity&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.role, role) || other.role == role)&&(identical(other.isApproved, isApproved) || other.isApproved == isApproved));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserEntity&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.role, role) || other.role == role)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.isApproved, isApproved) || other.isApproved == isApproved));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,username,email,phone,role,isApproved);
+int get hashCode => Object.hash(runtimeType,id,username,email,phone,role,fullName,isApproved);
 
 @override
 String toString() {
-  return 'UserEntity(id: $id, username: $username, email: $email, phone: $phone, role: $role, isApproved: $isApproved)';
+  return 'UserEntity(id: $id, username: $username, email: $email, phone: $phone, role: $role, fullName: $fullName, isApproved: $isApproved)';
 }
 
 
@@ -50,7 +45,7 @@ abstract mixin class $UserEntityCopyWith<$Res>  {
   factory $UserEntityCopyWith(UserEntity value, $Res Function(UserEntity) _then) = _$UserEntityCopyWithImpl;
 @useResult
 $Res call({
- String id, String username, String? email, String? phone, String? role, bool isApproved
+ String id, String username, String? email, String? phone, String? role, String? fullName, bool isApproved
 });
 
 
@@ -67,13 +62,14 @@ class _$UserEntityCopyWithImpl<$Res>
 
 /// Create a copy of UserEntity
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? username = null,Object? email = freezed,Object? phone = freezed,Object? role = freezed,Object? isApproved = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? username = null,Object? email = freezed,Object? phone = freezed,Object? role = freezed,Object? fullName = freezed,Object? isApproved = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
 as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String?,role: freezed == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
+as String?,fullName: freezed == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
 as String?,isApproved: null == isApproved ? _self.isApproved : isApproved // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
@@ -160,10 +156,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String username,  String? email,  String? phone,  String? role,  bool isApproved)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String username,  String? email,  String? phone,  String? role,  String? fullName,  bool isApproved)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UserEntity() when $default != null:
-return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that.isApproved);case _:
+return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that.fullName,_that.isApproved);case _:
   return orElse();
 
 }
@@ -181,10 +177,10 @@ return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String username,  String? email,  String? phone,  String? role,  bool isApproved)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String username,  String? email,  String? phone,  String? role,  String? fullName,  bool isApproved)  $default,) {final _that = this;
 switch (_that) {
 case _UserEntity():
-return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that.isApproved);case _:
+return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that.fullName,_that.isApproved);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +197,10 @@ return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String username,  String? email,  String? phone,  String? role,  bool isApproved)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String username,  String? email,  String? phone,  String? role,  String? fullName,  bool isApproved)?  $default,) {final _that = this;
 switch (_that) {
 case _UserEntity() when $default != null:
-return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that.isApproved);case _:
+return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that.fullName,_that.isApproved);case _:
   return null;
 
 }
@@ -216,19 +212,15 @@ return $default(_that.id,_that.username,_that.email,_that.phone,_that.role,_that
 
 
 class _UserEntity implements UserEntity {
-  const _UserEntity({required this.id, required this.username, this.email, this.phone, this.role, this.isApproved = true});
+  const _UserEntity({required this.id, required this.username, this.email, this.phone, this.role, this.fullName, this.isApproved = true});
   
 
 @override final  String id;
 @override final  String username;
-/// Email puede no estar disponible en todos los flujos (ej. login con usuario)
 @override final  String? email;
-/// Teléfono celular — se usa para envío de OTP
 @override final  String? phone;
-/// Rol o tipo de cliente en el sistema (ej. "MAYORISTA", "DISTRIBUIDOR")
 @override final  String? role;
-/// Si es false, el registro fue enviado pero está pendiente de aprobación.
-/// La app debe llevar al usuario a la pantalla PendingApprovalPage.
+@override final  String? fullName;
 @override@JsonKey() final  bool isApproved;
 
 /// Create a copy of UserEntity
@@ -241,16 +233,16 @@ _$UserEntityCopyWith<_UserEntity> get copyWith => __$UserEntityCopyWithImpl<_Use
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserEntity&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.role, role) || other.role == role)&&(identical(other.isApproved, isApproved) || other.isApproved == isApproved));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserEntity&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.role, role) || other.role == role)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.isApproved, isApproved) || other.isApproved == isApproved));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,username,email,phone,role,isApproved);
+int get hashCode => Object.hash(runtimeType,id,username,email,phone,role,fullName,isApproved);
 
 @override
 String toString() {
-  return 'UserEntity(id: $id, username: $username, email: $email, phone: $phone, role: $role, isApproved: $isApproved)';
+  return 'UserEntity(id: $id, username: $username, email: $email, phone: $phone, role: $role, fullName: $fullName, isApproved: $isApproved)';
 }
 
 
@@ -261,7 +253,7 @@ abstract mixin class _$UserEntityCopyWith<$Res> implements $UserEntityCopyWith<$
   factory _$UserEntityCopyWith(_UserEntity value, $Res Function(_UserEntity) _then) = __$UserEntityCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String username, String? email, String? phone, String? role, bool isApproved
+ String id, String username, String? email, String? phone, String? role, String? fullName, bool isApproved
 });
 
 
@@ -278,13 +270,14 @@ class __$UserEntityCopyWithImpl<$Res>
 
 /// Create a copy of UserEntity
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? username = null,Object? email = freezed,Object? phone = freezed,Object? role = freezed,Object? isApproved = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? username = null,Object? email = freezed,Object? phone = freezed,Object? role = freezed,Object? fullName = freezed,Object? isApproved = null,}) {
   return _then(_UserEntity(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
 as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String?,role: freezed == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
+as String?,fullName: freezed == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
 as String?,isApproved: null == isApproved ? _self.isApproved : isApproved // ignore: cast_nullable_to_non_nullable
 as bool,
   ));

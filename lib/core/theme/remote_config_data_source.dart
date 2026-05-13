@@ -18,19 +18,16 @@ class RemoteConfigDataSource {
 
   const RemoteConfigDataSource(this._dio);
 
-  /// S43 — Descarga la configuración de tema/branding/features para una empresa.
+  /// S43 — Descarga la configuración de tema/branding/features.
   ///
-  /// [empresaId] es opcional: si no se tiene (primera apertura sin sesión),
-  /// el backend devuelve la config por defecto del distribuidor.
-  Future<RemoteAppConfig> getConfig({String? empresaId}) async {
-    final response = await _dio.get<Map<String, dynamic>>(
+  /// [countryCode] es el código de país ISO 3166-1 alpha-2 (ej: "CO", "MX").
+  /// Se toma del dispositivo; el backend devuelve la config del tenant
+  /// correspondiente a ese país.
+  Future<RemoteAppConfig> getConfig({String countryCode = 'CO'}) async {
+    final response = await _dio.post<Map<String, dynamic>>(
       ApiEndpoints.themeConfig,
-      queryParameters: {
-        if (empresaId != null && empresaId.isNotEmpty) 'empresa_id': empresaId,
-      },
+      data: {'p_country_code': countryCode},
     );
-    // RemoteAppConfig.fromJson ya tiene fallbacks campo por campo,
-    // así que si el JSON viene incompleto nunca lanza excepción.
     return RemoteAppConfig.fromJson(response.data ?? {});
   }
 }

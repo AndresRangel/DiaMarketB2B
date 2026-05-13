@@ -16,7 +16,7 @@ const _kConfigCacheKey = 'remote_config_s43';
 
 abstract class RemoteConfigRepository {
   /// Descarga config del backend. Si falla, intenta desde cache.
-  Future<Either<Failure, RemoteAppConfig>> getConfig({String? empresaId});
+  Future<Either<Failure, RemoteAppConfig>> getConfig({String countryCode = 'CO'});
 
   /// Lee la config guardada en cache sin ir a la red.
   Future<RemoteAppConfig?> getCachedConfig();
@@ -36,11 +36,12 @@ class RemoteConfigRepositoryImpl implements RemoteConfigRepository {
         _storage = storage;
 
   @override
+  @override
   Future<Either<Failure, RemoteAppConfig>> getConfig({
-    String? empresaId,
+    String countryCode = 'CO',
   }) async {
     try {
-      final config = await _dataSource.getConfig(empresaId: empresaId);
+      final config = await _dataSource.getConfig(countryCode: countryCode);
       // Éxito: guardar en cache para la próxima vez que no haya red
       await cacheConfig(config);
       return Right(config);

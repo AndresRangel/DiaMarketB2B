@@ -14,18 +14,10 @@ abstract class UserEntity with _$UserEntity {
   const factory UserEntity({
     required String id,
     required String username,
-
-    /// Email puede no estar disponible en todos los flujos (ej. login con usuario)
     String? email,
-
-    /// Teléfono celular — se usa para envío de OTP
     String? phone,
-
-    /// Rol o tipo de cliente en el sistema (ej. "MAYORISTA", "DISTRIBUIDOR")
     String? role,
-
-    /// Si es false, el registro fue enviado pero está pendiente de aprobación.
-    /// La app debe llevar al usuario a la pantalla PendingApprovalPage.
+    String? fullName,
     @Default(true) bool isApproved,
   }) = _UserEntity;
 }

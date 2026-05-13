@@ -3,7 +3,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/network/api_endpoints.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/providers/dio_provider.dart';
-import '../dtos/company_dto.dart';
 import '../dtos/login_response_dto.dart';
 import '../dtos/user_dto.dart';
 
@@ -21,11 +20,8 @@ class AuthRemoteDataSource {
 
   const AuthRemoteDataSource(this._dio);
 
-  /// S01 — Login.
-  /// Endpoint real: /rest/v1/rpc/login_user
-  /// ⚠️  [TEMP] El RPC actual solo recibe p_email y retorna [{id, email}].
-  ///     Cuando el backend entregue el endpoint definitivo (con token real,
-  ///     empresas, etc.) actualizar aquí y en LoginResponseDto.
+  /// S01 — Login con email y contraseña.
+  /// Supabase Auth: POST /auth/v1/token?grant_type=password
   Future<LoginResponseDto> login({
     required String username,
     required String password,
@@ -33,35 +29,29 @@ class AuthRemoteDataSource {
     String? imei,
     String? companyCode,
   }) async {
-    final response = await _dio.post<List<dynamic>>(
+    final response = await _dio.post<Map<String, dynamic>>(
       ApiEndpoints.login,
-      data: {'p_email': username},
+      data: {'email': username, 'password': password},
     );
 
-    final list = response.data ?? [];
-    if (list.isEmpty) {
-      throw Exception('Credenciales inválidas');
-    }
+    final data = response.data!;
+    final userData = data['user'] as Map<String, dynamic>;
+    final userMetadata =
+        userData['user_metadata'] as Map<String, dynamic>? ?? {};
 
-    final item = list.first as Map<String, dynamic>;
-    final id = item['id'] as String;
-    final email = item['email'] as String;
-
-    // Construimos el DTO manualmente con los datos mínimos del endpoint actual.
-    // sessionToken usa el ID como token temporal hasta que el backend entregue JWT.
     return LoginResponseDto(
-      sessionToken: id,
+      accessToken: data['access_token'] as String,
+      refreshToken: data['refresh_token'] as String,
+      expiresAt: data['expires_at'] as int,
       user: UserDto(
-        id: id,
-        username: email,
-        email: email,
-        isApproved: true,
+        id: userData['id'] as String,
+        username: userData['email'] as String,
+        email: userData['email'] as String?,
+        phone: userData['phone'] as String?,
+        role: userData['role'] as String?,
+        fullName: userMetadata['full_name'] as String?,
       ),
-      // [TEMP] Empresa por defecto hasta que el backend retorne empresas reales.
-      companies: [
-        CompanyDto(id: 'default', code: 'DEFAULT', name: 'Mi Empresa'),
-      ],
-      selectedCompanyId: 'default',
+      companies: const [],
     );
   }
 

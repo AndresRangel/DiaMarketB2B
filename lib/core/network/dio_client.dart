@@ -2,11 +2,12 @@ import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import '../config/app_environment.dart';
 import '../error/failures.dart';
+import 'api_endpoints.dart';
 
 /// URLs que NO llevan el header Authorization del usuario.
 /// Son endpoints públicos o que usan solo el anon key de Supabase.
 const _publicPaths = [
-  '/rest/v1/rpc/login_user',  // S01 — login, solo necesita apikey
+  '/auth/v1/token',           // S01 login + S06 refresh — Supabase Auth, solo apikey
   '/registro',
   '/recuperar-contrasena',
   '/pre-registro',
@@ -27,15 +28,13 @@ class DioClient {
   late final Dio _dio;
   final Logger _logger = Logger();
 
-  /// Callback que el interceptor usa para obtener el token guardado.
-  /// Se conectará con [SecureStorageService] en el Bloque 9.
-  String? Function()? _getToken;
+  /// Access token JWT — se actualiza tras login/refresh, se borra en logout.
+  String? _accessToken;
 
-  /// Callback que el interceptor usa para renovar el token cuando expira.
-  /// Se conectará con el AuthRepository en el Bloque 1 (Feature Auth).
-  Future<String?> Function()? _refreshToken;
+  /// Refresh token — se usa cuando el access token expira (401).
+  String? _refreshTokenValue;
 
-  /// Callback que se invoca cuando el refresh falla → cerrar sesión.
+  /// Callback invocado cuando el refresh falla → la app cierra la sesión.
   void Function()? _onSessionExpired;
 
   DioClient() {
@@ -59,16 +58,27 @@ class DioClient {
 
   // ── Configuración pública ────────────────────────────────────────────────
 
-  /// Registra las funciones que el interceptor necesita para manejar tokens.
-  /// Se llama una vez durante la inicialización de la app (en main_*.dart).
-  void configure({
-    required String? Function() getToken,
-    required Future<String?> Function() refreshToken,
-    required void Function() onSessionExpired,
+  /// Actualiza los tokens en memoria. Llamar tras login o refresh exitoso.
+  void setTokens({
+    required String accessToken,
+    required String refreshToken,
+    void Function()? onSessionExpired,
   }) {
-    _getToken = getToken;
-    _refreshToken = refreshToken;
-    _onSessionExpired = onSessionExpired;
+    _accessToken = accessToken;
+    _refreshTokenValue = refreshToken;
+    if (onSessionExpired != null) _onSessionExpired = onSessionExpired;
+  }
+
+  /// Borra los tokens. Llamar al hacer logout.
+  void clearTokens() {
+    _accessToken = null;
+    _refreshTokenValue = null;
+  }
+
+  /// Registra el callback que se invoca cuando el refresh falla (sesión muerta).
+  /// Normalmente redirige al login limpiando el estado de auth.
+  void setSessionExpiredHandler(void Function() handler) {
+    _onSessionExpired = handler;
   }
 
   // ── Métodos HTTP públicos ────────────────────────────────────────────────
@@ -112,11 +122,8 @@ class DioClient {
             (path) => options.path.contains(path),
           );
 
-          if (!isPublic) {
-            final token = _getToken?.call();
-            if (token != null) {
-              options.headers['Authorization'] = 'Bearer $token';
-            }
+          if (!isPublic && _accessToken != null) {
+            options.headers['Authorization'] = 'Bearer $_accessToken';
           }
 
           handler.next(options);
@@ -125,22 +132,34 @@ class DioClient {
         // onError: se ejecuta cuando el servidor responde con error.
         // Si es un 401, intentamos renovar el token y reintentar.
         onError: (error, handler) async {
-          if (error.response?.statusCode == 401) {
+          if (error.response?.statusCode == 401 &&
+              _refreshTokenValue != null) {
             try {
-              final newToken = await _refreshToken?.call();
+              final refreshResponse = await _dio.post<Map<String, dynamic>>(
+                ApiEndpoints.refreshToken,
+                data: {'refresh_token': _refreshTokenValue},
+              );
+              final newAccessToken =
+                  refreshResponse.data?['access_token'] as String?;
+              final newRefreshToken =
+                  refreshResponse.data?['refresh_token'] as String?;
 
-              if (newToken != null) {
-                // Reintenta el request original con el token nuevo.
+              if (newAccessToken != null) {
+                _accessToken = newAccessToken;
+                if (newRefreshToken != null) {
+                  _refreshTokenValue = newRefreshToken;
+                }
                 error.requestOptions.headers['Authorization'] =
-                    'Bearer $newToken';
+                    'Bearer $newAccessToken';
                 final retryResponse = await _dio.fetch(error.requestOptions);
                 return handler.resolve(retryResponse);
               }
             } catch (_) {
-              // El refresh también falló → sesión expirada definitivamente.
+              // Refresh falló → sesión expirada definitivamente.
             }
 
-            // No se pudo renovar → cerrar sesión y avisar a la app.
+            _accessToken = null;
+            _refreshTokenValue = null;
             _onSessionExpired?.call();
           }
 
@@ -177,12 +196,27 @@ class DioClient {
 
       case DioExceptionType.badResponse:
         final statusCode = e.response?.statusCode;
-        final message = _extractMessage(e.response?.data) ??
-            'Error del servidor ($statusCode)';
+        final data = e.response?.data;
+        final errorCode = data is Map ? data['error_code'] as String? : null;
 
-        if (statusCode == 401) {
-          return Failure.unauthorized(message);
+        // Supabase Auth usa 400 para credenciales inválidas — mapeamos
+        // a Failure.unauthorized para que LoginNotifier muestre mensaje claro.
+        if (statusCode == 400 && _isAuthCredentialsError(errorCode)) {
+          return const Failure.unauthorized('Usuario o contraseña incorrectos.');
         }
+        if (statusCode == 400 && errorCode == 'email_not_confirmed') {
+          return const Failure.unauthorized('Debes confirmar tu email antes de ingresar.');
+        }
+        if (statusCode == 429) {
+          return const Failure.server('Demasiados intentos. Espera un momento.', statusCode: 429);
+        }
+        if (statusCode == 401) {
+          return Failure.unauthorized(
+            _extractMessage(data) ?? 'Sesión expirada. Inicia sesión de nuevo.',
+          );
+        }
+
+        final message = _extractMessage(data) ?? 'Error del servidor ($statusCode)';
         return Failure.server(message, statusCode: statusCode);
 
       case DioExceptionType.cancel:
@@ -194,10 +228,22 @@ class DioClient {
     }
   }
 
-  /// Intenta extraer el campo "message" o "error" del body de la respuesta.
+  /// Supabase usa distintos error_code para credenciales inválidas.
+  static bool _isAuthCredentialsError(String? errorCode) {
+    const credentialErrors = {
+      'invalid_credentials',
+      'user_not_found',
+      'invalid_grant',
+    };
+    return credentialErrors.contains(errorCode);
+  }
+
+  /// Extrae mensaje legible del body. Supabase usa "msg", REST estándar usa "message"/"error".
   static String? _extractMessage(dynamic data) {
     if (data is Map<String, dynamic>) {
-      return data['message'] as String? ?? data['error'] as String?;
+      return data['msg'] as String? ??
+          data['message'] as String? ??
+          data['error'] as String?;
     }
     return null;
   }
