@@ -19,5 +19,6 @@ abstract class UserEntity with _$UserEntity {
     String? role,
     String? fullName,
     @Default(true) bool isApproved,
+    String? tenantId,
   }) = _UserEntity;
 }

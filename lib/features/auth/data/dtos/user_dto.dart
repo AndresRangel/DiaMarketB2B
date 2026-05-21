@@ -21,6 +21,7 @@ abstract class UserDto with _$UserDto {
     String? role,
     @JsonKey(name: 'full_name') String? fullName,
     @JsonKey(name: 'is_approved') @Default(true) bool isApproved,
+    @JsonKey(name: 'tenant_id') String? tenantId,
   }) = _UserDto;
 
   /// Crea un UserDto desde un Map<String, dynamic> (el JSON deserializado).

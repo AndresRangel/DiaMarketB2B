@@ -34,6 +34,9 @@ class DioClient {
   /// Refresh token — se usa cuando el access token expira (401).
   String? _refreshTokenValue;
 
+  /// Tenant ID — viene de app_metadata.tenant_id en el JWT de Supabase.
+  String? _tenantId;
+
   /// Callback invocado cuando el refresh falla → la app cierra la sesión.
   void Function()? _onSessionExpired;
 
@@ -62,10 +65,12 @@ class DioClient {
   void setTokens({
     required String accessToken,
     required String refreshToken,
+    String? tenantId,
     void Function()? onSessionExpired,
   }) {
     _accessToken = accessToken;
     _refreshTokenValue = refreshToken;
+    _tenantId = tenantId;
     if (onSessionExpired != null) _onSessionExpired = onSessionExpired;
   }
 
@@ -73,6 +78,7 @@ class DioClient {
   void clearTokens() {
     _accessToken = null;
     _refreshTokenValue = null;
+    _tenantId = null;
   }
 
   /// Registra el callback que se invoca cuando el refresh falla (sesión muerta).
@@ -124,6 +130,9 @@ class DioClient {
 
           if (!isPublic && _accessToken != null) {
             options.headers['Authorization'] = 'Bearer $_accessToken';
+            if (_tenantId != null) {
+              options.headers['x-tenant-id'] = _tenantId;
+            }
           }
 
           handler.next(options);

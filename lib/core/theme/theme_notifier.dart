@@ -54,7 +54,7 @@ class ThemeNotifier extends _$ThemeNotifier {
     final repo = ref.read(remoteConfigRepositoryProvider);
 
     final result = await repo.getConfig(
-      countryCode: countryCode.isEmpty ? 'CO' : countryCode,
+      countryCode: (countryCode.length == 2 && countryCode != 'null') ? countryCode : 'CO',
     );
 
     // fold() maneja los dos casos del Either<Failure, RemoteAppConfig>:

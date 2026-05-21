@@ -68,6 +68,7 @@ class AuthRepositoryImpl implements AuthRepository {
       _dioClient.setTokens(
         accessToken: session.sessionToken,
         refreshToken: session.refreshToken,
+        tenantId: session.tenantId,
       );
       return Right(session);
     } on DioException catch (e) {
@@ -201,6 +202,7 @@ class AuthRepositoryImpl implements AuthRepository {
       _dioClient.setTokens(
         accessToken: session.sessionToken,
         refreshToken: session.refreshToken,
+        tenantId: session.tenantId,
       );
       return session;
     } catch (_) {

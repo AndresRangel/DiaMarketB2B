@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:logger/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../error/failures.dart';
@@ -28,29 +29,37 @@ abstract class RemoteConfigRepository {
 class RemoteConfigRepositoryImpl implements RemoteConfigRepository {
   final RemoteConfigDataSource _dataSource;
   final SecureStorageService _storage;
+  final _log = Logger();
 
-  const RemoteConfigRepositoryImpl({
+  RemoteConfigRepositoryImpl({
     required RemoteConfigDataSource dataSource,
     required SecureStorageService storage,
   })  : _dataSource = dataSource,
         _storage = storage;
 
   @override
-  @override
   Future<Either<Failure, RemoteAppConfig>> getConfig({
     String countryCode = 'CO',
   }) async {
     try {
       final config = await _dataSource.getConfig(countryCode: countryCode);
-      // Éxito: guardar en cache para la próxima vez que no haya red
       await cacheConfig(config);
       return Right(config);
     } on DioException catch (e) {
-      // Red falló → intentar desde cache antes de retornar error
+      _log.e(
+        'S43 getConfig falló [${e.type.name}] status=${e.response?.statusCode}',
+        error: e,
+      );
+      if (e.type == DioExceptionType.unknown) {
+        // En web, CORS se manifiesta como DioExceptionType.unknown con mensaje nulo.
+        // Verificar headers de CORS en Supabase: Settings → API → CORS.
+        _log.e('Posible error CORS. Verificar Supabase CORS settings.');
+      }
       final cached = await getCachedConfig();
       if (cached != null) return Right(cached);
       return Left(DioClient.handleDioException(e));
     } catch (e) {
+      _log.e('S43 getConfig error inesperado', error: e);
       final cached = await getCachedConfig();
       if (cached != null) return Right(cached);
       return Left(Failure.unknown(e.toString()));

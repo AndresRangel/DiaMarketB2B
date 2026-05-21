@@ -34,5 +34,9 @@ abstract class AuthSessionEntity with _$AuthSessionEntity {
 
     /// La empresa actualmente activa.
     required CompanyEntity selectedCompany,
+
+    /// Tenant del usuario — viene de app_metadata.tenant_id en el JWT.
+    /// Se inyecta como header x-tenant-id en todas las requests autenticadas.
+    String? tenantId,
   }) = _AuthSessionEntity;
 }

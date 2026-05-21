@@ -128,16 +128,15 @@ class _ProductDetailScreenState extends State<_ProductDetailScreen> {
         onViewCart: () {
           entry.remove();
           if (widget.isSheet) {
-            // Cerrar sheet primero, luego navegar en el frame siguiente
             final nav = Navigator.of(context);
             nav.pop();
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (nav.context.mounted) {
-                nav.context.replace('/cart');
+                nav.context.go('/cart');
               }
             });
           } else {
-            context.replace('/cart');
+            context.go('/cart');
           }
         },
         onDismiss: () => entry.remove(),

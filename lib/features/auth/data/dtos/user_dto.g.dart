@@ -14,6 +14,7 @@ _UserDto _$UserDtoFromJson(Map<String, dynamic> json) => _UserDto(
   role: json['role'] as String?,
   fullName: json['full_name'] as String?,
   isApproved: json['is_approved'] as bool? ?? true,
+  tenantId: json['tenant_id'] as String?,
 );
 
 Map<String, dynamic> _$UserDtoToJson(_UserDto instance) => <String, dynamic>{
@@ -24,4 +25,5 @@ Map<String, dynamic> _$UserDtoToJson(_UserDto instance) => <String, dynamic>{
   'role': instance.role,
   'full_name': instance.fullName,
   'is_approved': instance.isApproved,
+  'tenant_id': instance.tenantId,
 };

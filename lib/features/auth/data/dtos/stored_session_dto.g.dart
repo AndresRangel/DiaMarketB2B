@@ -16,6 +16,7 @@ _StoredSessionDto _$StoredSessionDtoFromJson(Map<String, dynamic> json) =>
           .map((e) => CompanyDto.fromJson(e as Map<String, dynamic>))
           .toList(),
       selectedCompanyId: json['selectedCompanyId'] as String,
+      tenantId: json['tenantId'] as String?,
     );
 
 Map<String, dynamic> _$StoredSessionDtoToJson(_StoredSessionDto instance) =>
@@ -26,4 +27,5 @@ Map<String, dynamic> _$StoredSessionDtoToJson(_StoredSessionDto instance) =>
       'user': instance.user,
       'companies': instance.companies,
       'selectedCompanyId': instance.selectedCompanyId,
+      'tenantId': instance.tenantId,
     };

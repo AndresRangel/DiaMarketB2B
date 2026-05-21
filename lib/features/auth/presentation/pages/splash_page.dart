@@ -23,8 +23,10 @@ class _SplashPageState extends ConsumerState<SplashPage> {
   }
 
   Future<void> _initialize() async {
+    final raw = WidgetsBinding.instance.platformDispatcher.locale.countryCode;
+    // Guard: web can return the string "null" or codes != 2 chars (not a valid ISO-3166).
     final countryCode =
-        WidgetsBinding.instance.platformDispatcher.locale.countryCode ?? 'CO';
+        (raw != null && raw.length == 2 && raw != 'null') ? raw : 'CO';
     await ref.read(themeProvider.notifier).loadConfig(countryCode);
     if (mounted) setState(() => _configLoaded = true);
     await Future.delayed(const Duration(seconds: 2));

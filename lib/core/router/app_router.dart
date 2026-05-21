@@ -46,6 +46,16 @@ CustomTransitionPage<void> _page(LocalKey key, Widget child) {
   );
 }
 
+// ── Navigator keys — deben vivir fuera del provider para no recrearse ────────
+// Sin estos, StatefulShellRoute.indexedStack genera keys inestables que
+// chocan con el HeroController al navegar desde rutas fuera del shell.
+
+final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+final _shellBranchHomeKey = GlobalKey<NavigatorState>(debugLabel: 'branch-home');
+final _shellBranchPromosKey = GlobalKey<NavigatorState>(debugLabel: 'branch-promos');
+final _shellBranchCartKey = GlobalKey<NavigatorState>(debugLabel: 'branch-cart');
+final _shellBranchProfileKey = GlobalKey<NavigatorState>(debugLabel: 'branch-profile');
+
 // ── Notifier para disparar refresh del router ─────────────────────────────────
 
 /// GoRouter necesita un Listenable para saber cuándo re-evaluar las
@@ -66,6 +76,7 @@ GoRouter appRouter(Ref ref) {
   });
 
   return GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     refreshListenable: refreshNotifier,
     debugLogDiagnostics: true,
@@ -156,6 +167,7 @@ GoRouter appRouter(Ref ref) {
         branches: [
           // Branch 0 — Inicio
           StatefulShellBranch(
+            navigatorKey: _shellBranchHomeKey,
             routes: [
               GoRoute(
                 path: AppRoutes.home,
@@ -167,6 +179,7 @@ GoRouter appRouter(Ref ref) {
 
           // Branch 1 — Promociones
           StatefulShellBranch(
+            navigatorKey: _shellBranchPromosKey,
             routes: [
               GoRoute(
                 path: AppRoutes.promotions,
@@ -178,6 +191,7 @@ GoRouter appRouter(Ref ref) {
 
           // Branch 2 — Carrito
           StatefulShellBranch(
+            navigatorKey: _shellBranchCartKey,
             routes: [
               GoRoute(
                 path: AppRoutes.cart,
@@ -189,6 +203,7 @@ GoRouter appRouter(Ref ref) {
 
           // Branch 3 — Perfil
           StatefulShellBranch(
+            navigatorKey: _shellBranchProfileKey,
             routes: [
               GoRoute(
                 path: AppRoutes.profile,

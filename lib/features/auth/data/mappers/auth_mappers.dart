@@ -15,6 +15,7 @@ extension UserDtoMapper on UserDto {
         role: role,
         fullName: fullName,
         isApproved: isApproved,
+        tenantId: tenantId,
       );
 }
 
@@ -45,10 +46,9 @@ extension LoginResponseDtoMapper on LoginResponseDto {
       sessionToken: accessToken,
       refreshToken: refreshToken,
       expiresAt: expiresAt,
-      companies: companyEntities.isNotEmpty
-          ? companyEntities
-          : [selected],
+      companies: companyEntities.isNotEmpty ? companyEntities : [selected],
       selectedCompany: selected,
+      tenantId: user.tenantId,
     );
   }
 }
@@ -67,6 +67,7 @@ extension StoredSessionDtoMapper on StoredSessionDto {
       expiresAt: expiresAt,
       companies: companyEntities,
       selectedCompany: selected,
+      tenantId: tenantId,
     );
   }
 }
@@ -84,6 +85,7 @@ extension AuthSessionEntityMapper on AuthSessionEntity {
           role: user.role,
           fullName: user.fullName,
           isApproved: user.isApproved,
+          tenantId: user.tenantId,
         ),
         companies: companies
             .map((c) => CompanyDto(
@@ -94,5 +96,6 @@ extension AuthSessionEntityMapper on AuthSessionEntity {
                 ))
             .toList(),
         selectedCompanyId: selectedCompany.id,
+        tenantId: tenantId,
       );
 }

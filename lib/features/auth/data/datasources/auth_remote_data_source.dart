@@ -38,6 +38,8 @@ class AuthRemoteDataSource {
     final userData = data['user'] as Map<String, dynamic>;
     final userMetadata =
         userData['user_metadata'] as Map<String, dynamic>? ?? {};
+    final appMetadata =
+        userData['app_metadata'] as Map<String, dynamic>? ?? {};
 
     return LoginResponseDto(
       accessToken: data['access_token'] as String,
@@ -50,6 +52,7 @@ class AuthRemoteDataSource {
         phone: userData['phone'] as String?,
         role: userData['role'] as String?,
         fullName: userMetadata['full_name'] as String?,
+        tenantId: appMetadata['tenant_id'] as String?,
       ),
       companies: const [],
     );

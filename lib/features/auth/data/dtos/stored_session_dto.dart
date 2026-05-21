@@ -22,6 +22,7 @@ abstract class StoredSessionDto with _$StoredSessionDto {
     required UserDto user,
     required List<CompanyDto> companies,
     required String selectedCompanyId,
+    String? tenantId,
   }) = _StoredSessionDto;
 
   factory StoredSessionDto.fromJson(Map<String, dynamic> json) =>

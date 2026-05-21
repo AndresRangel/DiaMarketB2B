@@ -71,7 +71,7 @@ final class ThemeNotifierProvider
   }
 }
 
-String _$themeNotifierHash() => r'911f82f91051baae4b325ab19c24566066b45d38';
+String _$themeNotifierHash() => r'02a7449a3d2bd275014365ec85d05499e1107fee';
 
 /// Provider del tema dinámico white-label.
 ///
